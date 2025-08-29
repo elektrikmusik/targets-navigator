@@ -225,21 +225,45 @@ export const TableNavigator = () => {
         if (profilesHook.loading) return <LoadingSpinner message="Loading company profiles..." />;
         if (profilesHook.error)
           return <ErrorMessage message={profilesHook.error} onRetry={profilesHook.refresh} />;
-        return <CompanyProfileTable data={profilesHook.data} />;
+        return (
+          <CompanyProfileTable
+            data={profilesHook.data}
+            loading={profilesHook.loading}
+            totalCount={profilesHook.totalCount}
+            hasMore={profilesHook.hasMore}
+            onLoadMore={profilesHook.fetchMore}
+          />
+        );
 
       case "hydrogen":
         if (hydrogenHook.loading)
           return <LoadingSpinner message="Loading hydrogen evaluation data..." />;
         if (hydrogenHook.error)
           return <ErrorMessage message={hydrogenHook.error} onRetry={hydrogenHook.refresh} />;
-        return <HydrogenTable data={hydrogenHook.data} loading={hydrogenHook.loading} />;
+        return (
+          <HydrogenTable
+            data={hydrogenHook.data}
+            loading={hydrogenHook.loading}
+            totalCount={hydrogenHook.totalCount}
+            hasMore={hydrogenHook.hasMore}
+            onLoadMore={hydrogenHook.fetchMore}
+          />
+        );
 
       case "industry":
         if (industryHook.loading)
           return <LoadingSpinner message="Loading industry analysis data..." />;
         if (industryHook.error)
           return <ErrorMessage message={industryHook.error} onRetry={industryHook.refresh} />;
-        return <IndustryTable data={industryHook.data} loading={industryHook.loading} />;
+        return (
+          <IndustryTable
+            data={industryHook.data}
+            loading={industryHook.loading}
+            totalCount={industryHook.totalCount}
+            hasMore={industryHook.hasMore}
+            onLoadMore={industryHook.fetchMore}
+          />
+        );
 
       case "manufacturing":
         if (manufacturingHook.loading)
@@ -249,7 +273,13 @@ export const TableNavigator = () => {
             <ErrorMessage message={manufacturingHook.error} onRetry={manufacturingHook.refresh} />
           );
         return (
-          <ManufacturingTable data={manufacturingHook.data} loading={manufacturingHook.loading} />
+          <ManufacturingTable
+            data={manufacturingHook.data}
+            loading={manufacturingHook.loading}
+            totalCount={manufacturingHook.totalCount}
+            hasMore={manufacturingHook.hasMore}
+            onLoadMore={manufacturingHook.fetchMore}
+          />
         );
 
       case "financial":
@@ -257,19 +287,43 @@ export const TableNavigator = () => {
           return <LoadingSpinner message="Loading financial performance data..." />;
         if (financialHook.error)
           return <ErrorMessage message={financialHook.error} onRetry={financialHook.refresh} />;
-        return <FinancialTable data={financialHook.data} loading={financialHook.loading} />;
+        return (
+          <FinancialTable
+            data={financialHook.data}
+            loading={financialHook.loading}
+            totalCount={financialHook.totalCount}
+            hasMore={financialHook.hasMore}
+            onLoadMore={financialHook.fetchMore}
+          />
+        );
 
       case "ownership":
         if (ownershipHook.loading)
           return <LoadingSpinner message="Loading ownership structure data..." />;
         if (ownershipHook.error)
           return <ErrorMessage message={ownershipHook.error} onRetry={ownershipHook.refresh} />;
-        return <OwnershipTable data={ownershipHook.data} loading={ownershipHook.loading} />;
+        return (
+          <OwnershipTable
+            data={ownershipHook.data}
+            loading={ownershipHook.loading}
+            totalCount={ownershipHook.totalCount}
+            hasMore={ownershipHook.hasMore}
+            onLoadMore={ownershipHook.fetchMore}
+          />
+        );
 
       case "ip":
         if (ipHook.loading) return <LoadingSpinner message="Loading IP & patent data..." />;
         if (ipHook.error) return <ErrorMessage message={ipHook.error} onRetry={ipHook.refresh} />;
-        return <IPTable data={ipHook.data} loading={ipHook.loading} />;
+        return (
+          <IPTable
+            data={ipHook.data}
+            loading={ipHook.loading}
+            totalCount={ipHook.totalCount}
+            hasMore={ipHook.hasMore}
+            onLoadMore={ipHook.fetchMore}
+          />
+        );
 
       default:
         return (
