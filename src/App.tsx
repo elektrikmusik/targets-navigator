@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import { Suspense, lazy } from "react";
-import { Home, NotFound, RootErrorBoundary } from "./page";
+import { Home, NotFound, RootErrorBoundary, StrategicAnalysis } from "./page";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import { DashboardSkeleton } from "./components/ui/skeleton";
 
@@ -28,6 +28,15 @@ const App = () => {
             element={
               <Suspense fallback={<DashboardSkeleton />}>
                 <TableNavigator />
+              </Suspense>
+            }
+            errorElement={<RootErrorBoundary />}
+          />
+          <Route
+            path="/strategic"
+            element={
+              <Suspense fallback={<DashboardSkeleton />}>
+                <StrategicAnalysis />
               </Suspense>
             }
             errorElement={<RootErrorBoundary />}

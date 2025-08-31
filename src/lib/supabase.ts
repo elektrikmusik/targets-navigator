@@ -30,6 +30,11 @@ export type Database = {
           visualElement: string | null;
           narrative: string | null;
           key: number | null;
+          executiveTeam: string | null;
+          customerSegments: string | null;
+          products: string | null;
+          news_md: string | null;
+          sentiment_md: string | null;
         };
         Insert: {
           id?: number;
@@ -46,6 +51,11 @@ export type Database = {
           visualElement?: string | null;
           narrative?: string | null;
           key?: number | null;
+          executiveTeam?: string | null;
+          customerSegments?: string | null;
+          products?: string | null;
+          news_md?: string | null;
+          sentiment_md?: string | null;
         };
         Update: {
           id?: number;
@@ -62,6 +72,11 @@ export type Database = {
           visualElement?: string | null;
           narrative?: string | null;
           key?: number | null;
+          executiveTeam?: string | null;
+          customerSegments?: string | null;
+          products?: string | null;
+          news_md?: string | null;
+          sentiment_md?: string | null;
         };
       };
       companies_hydrogen: {
@@ -217,6 +232,11 @@ export interface CompanyProfile {
   basicInformation: string | null;
   productServices: string | null;
   marketPosition: string | null;
+  executiveTeam: string | null;
+  customerSegments: string | null;
+  products: string | null;
+  news_md: string | null;
+  sentiment_md: string | null;
 }
 
 export interface CompanyScores {

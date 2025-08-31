@@ -29,6 +29,10 @@ export {
 } from "./useOwnershipData";
 export { useIPData, useCompanyIPData, useIPInsights } from "./useIPData";
 
+// Strategic analysis hook
+export { useStrategicAnalysis } from "./useStrategicAnalysis";
+export type { StrategicCompanyData, StrategicAnalysisStats } from "./useStrategicAnalysis";
+
 // Unified data service
 export {
   useUnifiedCompanyData,

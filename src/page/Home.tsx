@@ -1,4 +1,4 @@
-import { Dashboard } from "@/components/Dashboard";
+import { DashboardContainer } from "@/components";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
@@ -10,7 +10,7 @@ export const Home = ({ ...rest }: Props) => {
   return (
     <ErrorBoundary fallback={<DashboardSkeleton />}>
       <Suspense fallback={<DashboardSkeleton />}>
-        <Dashboard {...rest} />
+        <DashboardContainer {...rest} />
       </Suspense>
       <PerformanceMonitor />
     </ErrorBoundary>

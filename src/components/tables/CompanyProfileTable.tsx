@@ -105,6 +105,51 @@ const columns: ColumnDef<CompanyProfile>[] = [
     ),
   },
   {
+    accessorKey: "executiveTeam",
+    header: "Executive Team",
+    cell: ({ row }) => (
+      <div className="text-muted-foreground max-w-[200px] truncate text-sm">
+        {row.getValue("executiveTeam") || "N/A"}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "customerSegments",
+    header: "Customer Segments",
+    cell: ({ row }) => (
+      <div className="text-muted-foreground max-w-[200px] truncate text-sm">
+        {row.getValue("customerSegments") || "N/A"}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "products",
+    header: "Products",
+    cell: ({ row }) => (
+      <div className="text-muted-foreground max-w-[200px] truncate text-sm">
+        {row.getValue("products") || "N/A"}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "news_md",
+    header: "News",
+    cell: ({ row }) => (
+      <div className="text-muted-foreground max-w-[200px] truncate text-sm">
+        {row.getValue("news_md") || "N/A"}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "sentiment_md",
+    header: "Sentiment",
+    cell: ({ row }) => (
+      <div className="text-muted-foreground max-w-[200px] truncate text-sm">
+        {row.getValue("sentiment_md") || "N/A"}
+      </div>
+    ),
+  },
+  {
     id: "actions",
     enableHiding: false,
     cell: ({ row }) => (
