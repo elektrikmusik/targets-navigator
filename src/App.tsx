@@ -1,48 +1,44 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import { Suspense, lazy } from "react";
-import { Home, NotFound, RootErrorBoundary, StrategicAnalysis } from "./page";
+import { Home, NotFound, RootErrorBoundary } from "./page";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import { DashboardSkeleton } from "./components/ui/skeleton";
+import { AppLayout } from "./components/layout/AppLayout";
 
 // Lazy load components for better performance
-const TableNavigator = lazy(() =>
-  import("./components/TableNavigator").then((module) => ({ default: module.TableNavigator })),
+const CompanyOverviewDashboard = lazy(() =>
+  import("./components/CompanyOverviewDashboard").then((module) => ({
+    default: module.CompanyOverviewDashboard,
+  })),
 );
 
 const App = () => {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Suspense fallback={<DashboardSkeleton />}>
-                <Home />
-              </Suspense>
-            }
-            errorElement={<RootErrorBoundary />}
-          />
-          <Route
-            path="/tables"
-            element={
-              <Suspense fallback={<DashboardSkeleton />}>
-                <TableNavigator />
-              </Suspense>
-            }
-            errorElement={<RootErrorBoundary />}
-          />
-          <Route
-            path="/strategic"
-            element={
-              <Suspense fallback={<DashboardSkeleton />}>
-                <StrategicAnalysis />
-              </Suspense>
-            }
-            errorElement={<RootErrorBoundary />}
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppLayout>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <Home />
+                </Suspense>
+              }
+              errorElement={<RootErrorBoundary />}
+            />
+            <Route
+              path="/overview"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <CompanyOverviewDashboard />
+                </Suspense>
+              }
+              errorElement={<RootErrorBoundary />}
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AppLayout>
       </BrowserRouter>
     </ErrorBoundary>
   );

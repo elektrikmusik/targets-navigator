@@ -1,10 +1,5 @@
 export * from "./ui";
 export * from "./auth";
 export * from "./charts";
-export * from "./tables";
-export { Dashboard } from "./Dashboard";
-export { TableNavigator } from "./TableNavigator";
-export { StrategicAnalysisDashboard } from "./StrategicAnalysisDashboard";
-export { Navigation } from "./Navigation";
-export { DashboardContainer } from "./DashboardContainer";
-export type { DashboardView } from "./Navigation";
+export { CompanyOverviewDashboard } from "./CompanyOverviewDashboard";
+export { AppLayout } from "./layout/AppLayout";

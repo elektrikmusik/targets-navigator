@@ -35,3 +35,6 @@ package-lock.json
 
 auto-imports.d.ts
 .eslintrc-auto-import.json
+
+# Data-Driven Dashboard (excluded from git)
+Data-Driven Dashboard/
