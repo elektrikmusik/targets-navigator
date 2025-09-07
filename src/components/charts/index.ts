@@ -2,3 +2,7 @@ export { LineChart } from "./LineChart";
 export { BarChart } from "./BarChart";
 export { PieChart } from "./PieChart";
 export { ScatterPlot } from "./ScatterPlot";
+export { BubbleChart } from "./BubbleChart";
+export { BubbleChartExample } from "./BubbleChartExample";
+export { CompanyBubbleChart } from "./CompanyBubbleChart";
+export { CompanyBubbleChartExample } from "./CompanyBubbleChartExample";

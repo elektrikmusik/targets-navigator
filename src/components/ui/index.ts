@@ -14,3 +14,6 @@ export * from "./data-table-column-header";
 export * from "./data-table-faceted-filter";
 export * from "./data-table-view-options";
 export * from "./data-table-row-actions";
+export * from "./label";
+export * from "./switch";
+export * from "./tabs";
