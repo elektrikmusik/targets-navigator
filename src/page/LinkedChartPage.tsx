@@ -360,18 +360,48 @@ export const LinkedChartPage = () => {
     };
 
     if (loading) {
-        return <DashboardSkeleton />;
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <div className="text-blue-500 mb-4">Loading data...</div>
+                    <DashboardSkeleton />
+                </div>
+            </div>
+        );
     }
 
     if (error) {
         return (
             <div className="flex items-center justify-center h-96">
                 <div className="text-center">
-                    <div className="text-red-500 mb-4">Error loading data</div>
+                    <div className="text-red-500 mb-4">Error loading data: {error}</div>
           <Button onClick={() => window.location.reload()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry
           </Button>
+                </div>
+            </div>
+        );
+    }
+
+    // Debug: Show data status
+    console.log('LinkedChartPage - Data status:', { 
+        dataLength: data?.length || 0, 
+        loading, 
+        error,
+        filteredDataLength: filteredData.length 
+    });
+
+    // If no data, show empty state
+    if (!data || data.length === 0) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="text-center">
+                    <div className="text-gray-500 mb-4">No data available</div>
+                    <Button onClick={() => window.location.reload()}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh
+                    </Button>
                 </div>
             </div>
         );
