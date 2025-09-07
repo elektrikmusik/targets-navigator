@@ -334,9 +334,9 @@ export const LinkedChartPage = () => {
         setActiveTab("table"); // Switch to table view when company is selected
     }, []);
 
-  const handleBubbleHover = useCallback(() => {
-    // Could show tooltip or update state here
-  }, []);
+    const handleBubbleHover = useCallback(() => {
+        // Could show tooltip or update state here
+    }, []);
 
     // Control handlers
     const toggleLegend = () => setShowLegend(!showLegend);
@@ -375,22 +375,14 @@ export const LinkedChartPage = () => {
             <div className="flex items-center justify-center h-96">
                 <div className="text-center">
                     <div className="text-red-500 mb-4">Error loading data: {error}</div>
-          <Button onClick={() => window.location.reload()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Retry
-          </Button>
+                    <Button onClick={() => window.location.reload()}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry
+                    </Button>
                 </div>
             </div>
         );
     }
-
-    // Debug: Show data status
-    console.log('LinkedChartPage - Data status:', { 
-        dataLength: data?.length || 0, 
-        loading, 
-        error,
-        filteredDataLength: filteredData.length 
-    });
 
     // If no data, show empty state
     if (!data || data.length === 0) {
@@ -421,10 +413,10 @@ export const LinkedChartPage = () => {
                                 </p>
                             </div>
                             <div className="flex gap-2">
-                <Button variant="outline" onClick={() => window.location.reload()}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
+                                <Button variant="outline" onClick={() => window.location.reload()}>
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Refresh
+                                </Button>
                                 <Button variant="outline">
                                     <Download className="h-4 w-4 mr-2" />
                                     Export
@@ -458,17 +450,21 @@ export const LinkedChartPage = () => {
 
                     {/* Main Content */}
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-4">
                             <TabsTrigger value="overview" className="flex items-center gap-2">
                                 <BarChart3 className="h-4 w-4" />
                                 Chart View
+                            </TabsTrigger>
+                            <TabsTrigger value="company-chart" className="flex items-center gap-2">
+                                <Building2 className="h-4 w-4" />
+                                Company Chart
                             </TabsTrigger>
                             <TabsTrigger value="table" className="flex items-center gap-2">
                                 <Table className="h-4 w-4" />
                                 Table View
                             </TabsTrigger>
                             <TabsTrigger value="combined" className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4" />
+                                <TrendingUp className="h-4 w-4" />
                                 Combined View
                             </TabsTrigger>
                         </TabsList>
@@ -516,6 +512,23 @@ export const LinkedChartPage = () => {
                                     />
                                 </div>
                             </div>
+                        </TabsContent>
+
+                        <TabsContent value="company-chart" className="space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Company Bubble Chart Example</CardTitle>
+                                    <CardDescription>
+                                        Advanced company analysis with filtering and interactive features
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <CompanyBubbleChartExample
+                                        data={filteredData}
+                                        loading={loading}
+                                    />
+                                </CardContent>
+                            </Card>
                         </TabsContent>
 
                         <TabsContent value="table" className="space-y-6">
