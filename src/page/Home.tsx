@@ -26,6 +26,12 @@ export const Home = () => {
                     View Dashboard
                   </a>
                 </Button>
+                <Button asChild variant="outline" size="lg">
+                  <a href="/charts">
+                    <TrendingUp className="mr-2 h-5 w-5" />
+                    View Charts
+                  </a>
+                </Button>
                 <Button variant="outline" size="lg">
                   <Globe className="mr-2 h-5 w-5" />
                   Learn More
