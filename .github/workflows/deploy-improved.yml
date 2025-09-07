@@ -1,0 +1,143 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files
+          path: dist/
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 15
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e  # Exit on any error
+
+            echo "🚀 Starting deployment process..."
+            echo "Timestamp: $(date)"
+
+            # Navigate to application directory
+            cd /opt/targets-navigator || { echo "❌ Failed to navigate to app directory"; exit 1; }
+
+            # Check if we're in a git repository
+            if [ ! -d .git ]; then
+              echo "❌ Not in a git repository. Cloning..."
+              cd /opt
+              rm -rf targets-navigator
+              git clone https://github.com/elektrikmusik/targets-navigator.git
+              cd targets-navigator
+            fi
+
+            # Pull latest changes
+            echo "📥 Pulling latest changes..."
+            git pull origin main || { echo "❌ Failed to pull changes"; exit 1; }
+
+            # Check if required files exist
+            if [ ! -f docker-compose.prod.yml ]; then
+              echo "❌ docker-compose.prod.yml not found"
+              exit 1
+            fi
+
+            if [ ! -f .env.production ]; then
+              echo "❌ .env.production not found"
+              exit 1
+            fi
+
+            # Stop existing containers gracefully
+            echo "🛑 Stopping existing containers..."
+            docker-compose -f docker-compose.prod.yml down || true
+
+            # Build new containers
+            echo "🔨 Building new containers..."
+            docker-compose -f docker-compose.prod.yml build --no-cache || { echo "❌ Build failed"; exit 1; }
+
+            # Start containers
+            echo "🚀 Starting containers..."
+            docker-compose -f docker-compose.prod.yml up -d || { echo "❌ Failed to start containers"; exit 1; }
+
+            # Wait for application to start
+            echo "⏳ Waiting for application to start..."
+            sleep 15
+
+            # Health check with retries
+            echo "🏥 Performing health check..."
+            for i in {1..5}; do
+              if curl -f http://localhost > /dev/null 2>&1; then
+                echo "✅ Health check passed (attempt $i/5)"
+                break
+              else
+                echo "⏳ Health check failed (attempt $i/5), retrying in 10 seconds..."
+                sleep 10
+                if [ $i -eq 5 ]; then
+                  echo "❌ Health check failed after 5 attempts"
+                  echo "📋 Container status:"
+                  docker-compose -f docker-compose.prod.yml ps
+                  echo "📋 Recent logs:"
+                  docker-compose -f docker-compose.prod.yml logs --tail=20
+                  exit 1
+                fi
+              fi
+            done
+
+            # Clean up old Docker images (non-blocking)
+            echo "🧹 Cleaning up old Docker images..."
+            docker system prune -f || true
+
+            # Final status check
+            echo "📊 Final status check..."
+            docker-compose -f docker-compose.prod.yml ps
+
+            echo "✅ Deployment successful! Application is running at http://$(curl -s ifconfig.me)"
+            echo "🕐 Deployment completed at: $(date)"
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment completed successfully!"
+          else
+            echo "❌ Deployment failed. Check the logs above for details."
+          fi
