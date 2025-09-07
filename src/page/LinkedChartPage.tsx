@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { CompanyOverview } from "@/lib/supabase";
 import { CompanyBubbleChart } from "@/components/charts/CompanyBubbleChart";
+import { CompanyBubbleChartExample } from "@/components/charts/CompanyBubbleChartExample";
 import { CompanyOverviewTable } from "@/components/tables/CompanyOverviewTable";
 import { useCompanyOverview } from "@/hooks/useCompanyOverview";
 import { Badge } from "@/components/ui/badge";

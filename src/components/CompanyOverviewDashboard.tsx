@@ -222,6 +222,7 @@ const AdvancedFilters = ({
               value={filters.tier}
               onChange={(e) => handleFilterChange("tier", e.target.value)}
               className="border-input focus-visible:ring-ring flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Filter by tier"
             >
               <option value="">All Tiers</option>
               <option value="Partner">Partner</option>
@@ -336,7 +337,7 @@ export const CompanyOverviewDashboard = () => {
   }, [refresh]);
 
   const handleExport = useCallback(() => {
-    const csvContent = convertToCSV(data);
+    const csvContent = convertToCSV(data as unknown as Record<string, unknown>[]);
     downloadCSV(csvContent, "company-overview-export.csv");
   }, [data]);
 
@@ -414,7 +415,10 @@ export const CompanyOverviewDashboard = () => {
         </div>
 
         {/* Statistics Cards */}
-        <StatisticsCards data={filteredData} totalCount={totalCount} />
+        <StatisticsCards
+          data={filteredData as unknown as Record<string, unknown>[]}
+          totalCount={totalCount}
+        />
 
         {/* Data Status */}
         <div className="text-center text-sm text-gray-600">
