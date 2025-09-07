@@ -70,6 +70,9 @@ export const CompanyBubbleChart = ({
     yAxisRange,
     filterTiers,
 }: CompanyBubbleChartProps) => {
+    console.log('CompanyBubbleChart rendering with data:', data?.length || 0, 'items');
+    console.log('Chart props:', { title, xAxisTitle, yAxisTitle, height, showLegend, showGrid });
+    
     // Process data and create traces
     const { traces } = useMemo(() => {
         if (!data || data.length === 0) {
@@ -126,7 +129,7 @@ export const CompanyBubbleChart = ({
                 marker: {
                     size: tierData.map(d => scaleBubbleSize(d.overallScore!)),
                     color: colorScheme[tier] || colorScheme["Unknown"] || "#6B7280",
-                    opacity: 0.7,
+                    opacity: 0.5,
                     line: {
                         color: '#ffffff',
                         width: 2,
@@ -145,6 +148,8 @@ export const CompanyBubbleChart = ({
             };
         });
 
+        console.log('Created traces:', traces.length, 'traces');
+        console.log('Sample trace:', traces[0]);
         return { traces };
     }, [data, colorScheme, minBubbleSize, maxBubbleSize, xAxisTitle, yAxisTitle, hoverTemplate, filterTiers]);
 
@@ -165,6 +170,21 @@ export const CompanyBubbleChart = ({
             onBubbleHover(company, event);
         }
     };
+
+    // Debug: Check if we have traces
+    if (traces.length === 0) {
+        console.log('No traces to render, returning empty div');
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                <div className="text-center">
+                    <div className="text-gray-500 mb-2">No data to display</div>
+                    <div className="text-sm text-gray-400">Check data format and filters</div>
+                </div>
+            </div>
+        );
+    }
+
+    console.log('Rendering Plotly with', traces.length, 'traces');
 
     return (
         <div className="w-full h-full">

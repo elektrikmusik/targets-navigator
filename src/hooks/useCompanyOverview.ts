@@ -62,6 +62,20 @@ export const useCompanyOverview = (
     filterBy = {},
   } = options;
 
+  // Memoize filterBy to prevent infinite loops
+  const memoizedFilterBy = useMemo(() => filterBy, [
+    filterBy.country,
+    filterBy.ceres_region,
+    filterBy.company_state,
+    filterBy.tier,
+    filterBy.minOverallScore,
+    filterBy.maxOverallScore,
+    filterBy.minStrategicFit,
+    filterBy.maxStrategicFit,
+    filterBy.minAbilityToExecute,
+    filterBy.maxAbilityToExecute,
+  ]);
+
   // Fetch filter options from database
   const fetchFilterOptions = useCallback(async () => {
     try {
@@ -116,35 +130,35 @@ export const useCompanyOverview = (
         }
 
         // Apply filters
-        if (filterBy.country) {
-          query = query.eq("country", filterBy.country);
+        if (memoizedFilterBy.country) {
+          query = query.eq("country", memoizedFilterBy.country);
         }
-        if (filterBy.ceres_region) {
-          query = query.eq("ceres_region", filterBy.ceres_region);
+        if (memoizedFilterBy.ceres_region) {
+          query = query.eq("ceres_region", memoizedFilterBy.ceres_region);
         }
-        if (filterBy.company_state) {
-          query = query.eq("company_state", filterBy.company_state);
+        if (memoizedFilterBy.company_state) {
+          query = query.eq("company_state", memoizedFilterBy.company_state);
         }
-        if (filterBy.tier) {
-          query = query.eq("Tier", filterBy.tier);
+        if (memoizedFilterBy.tier) {
+          query = query.eq("Tier", memoizedFilterBy.tier);
         }
-        if (filterBy.minOverallScore !== undefined) {
-          query = query.gte("overallScore", filterBy.minOverallScore);
+        if (memoizedFilterBy.minOverallScore !== undefined) {
+          query = query.gte("overallScore", memoizedFilterBy.minOverallScore);
         }
-        if (filterBy.maxOverallScore !== undefined) {
-          query = query.lte("overallScore", filterBy.maxOverallScore);
+        if (memoizedFilterBy.maxOverallScore !== undefined) {
+          query = query.lte("overallScore", memoizedFilterBy.maxOverallScore);
         }
-        if (filterBy.minStrategicFit !== undefined) {
-          query = query.gte("strategicFit", filterBy.minStrategicFit);
+        if (memoizedFilterBy.minStrategicFit !== undefined) {
+          query = query.gte("strategicFit", memoizedFilterBy.minStrategicFit);
         }
-        if (filterBy.maxStrategicFit !== undefined) {
-          query = query.lte("strategicFit", filterBy.maxStrategicFit);
+        if (memoizedFilterBy.maxStrategicFit !== undefined) {
+          query = query.lte("strategicFit", memoizedFilterBy.maxStrategicFit);
         }
-        if (filterBy.minAbilityToExecute !== undefined) {
-          query = query.gte("abilityToExecute", filterBy.minAbilityToExecute);
+        if (memoizedFilterBy.minAbilityToExecute !== undefined) {
+          query = query.gte("abilityToExecute", memoizedFilterBy.minAbilityToExecute);
         }
-        if (filterBy.maxAbilityToExecute !== undefined) {
-          query = query.lte("abilityToExecute", filterBy.maxAbilityToExecute);
+        if (memoizedFilterBy.maxAbilityToExecute !== undefined) {
+          query = query.lte("abilityToExecute", memoizedFilterBy.maxAbilityToExecute);
         }
 
         // Apply sorting
@@ -263,12 +277,12 @@ export const useCompanyOverview = (
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, sortBy, sortOrder, filterBy]);
+  }, [searchTerm, sortBy, sortOrder, memoizedFilterBy]);
 
   useEffect(() => {
     fetchData(0, false);
     fetchFilterOptions();
-  }, [fetchData, fetchFilterOptions]);
+  }, [searchTerm, sortBy, sortOrder, memoizedFilterBy, fetchFilterOptions]);
 
   return {
     data,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BubbleChart, BubbleDataPoint } from "./BubbleChart";
 import { Button } from "../ui/button";
+import { CHART_DIMENSIONS, CHART_RANGES } from "@/constants/dimensions";
 
 // Sample data for demonstration
 const sampleData: BubbleDataPoint[] = [
@@ -124,7 +125,7 @@ export const BubbleChartExample = () => {
                         title="Project Portfolio Analysis"
                         xAxisTitle="Strategic Fit"
                         yAxisTitle="Ability to Execute"
-                        height={400}
+                        height={CHART_DIMENSIONS.getChartRatio(0.4)(window.innerHeight)}
                         showLegend={showLegend}
                         showGrid={showGrid}
                         colorScheme={customColorScheme}
@@ -132,8 +133,8 @@ export const BubbleChartExample = () => {
                         maxBubbleSize={40}
                         onBubbleClick={handleBubbleClick}
                         onBubbleHover={handleBubbleHover}
-                        xAxisRange={[0, 100]}
-                        yAxisRange={[0, 100]}
+                        xAxisRange={[CHART_RANGES.percentage.min, CHART_RANGES.percentage.max]}
+                        yAxisRange={[CHART_RANGES.percentage.min, CHART_RANGES.percentage.max]}
                     />
                 </div>
             </div>

@@ -3,6 +3,7 @@ import { CompanyBubbleChart } from "./CompanyBubbleChart";
 import { CompanyOverview } from "@/lib/supabase";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { CHART_DIMENSIONS, CHART_RANGES } from "@/constants/dimensions";
 
 interface CompanyBubbleChartExampleProps {
     data: CompanyOverview[];
@@ -109,14 +110,14 @@ export const CompanyBubbleChartExample = ({ data, loading = false }: CompanyBubb
                         title="Company Portfolio Analysis"
                         xAxisTitle="Strategic Fit"
                         yAxisTitle="Ability to Execute"
-                        height={400}
+                        height={CHART_DIMENSIONS.getChartRatio(0.4)(window.innerHeight)}
                         showLegend={showLegend}
                         showGrid={showGrid}
                         filterTiers={filterTiers.length > 0 ? filterTiers : undefined}
                         onBubbleClick={handleBubbleClick}
                         onBubbleHover={handleBubbleHover}
-                        xAxisRange={[0, 10]}
-                        yAxisRange={[0, 10]}
+                        xAxisRange={[CHART_RANGES.score.min, CHART_RANGES.score.max]}
+                        yAxisRange={[CHART_RANGES.score.min, CHART_RANGES.score.max]}
                     />
                 </div>
             </div>

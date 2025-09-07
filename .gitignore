@@ -38,3 +38,5 @@ auto-imports.d.ts
 
 # Data-Driven Dashboard (excluded from git)
 Data-Driven Dashboard/
+
+*.png

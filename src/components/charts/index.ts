@@ -6,3 +6,5 @@ export { BubbleChart } from "./BubbleChart";
 export { BubbleChartExample } from "./BubbleChartExample";
 export { CompanyBubbleChart } from "./CompanyBubbleChart";
 export { CompanyBubbleChartExample } from "./CompanyBubbleChartExample";
+export { LinkedChart } from "./LinkedChart";
+export { SimpleCompanyTable } from "./SimpleCompanyTable";

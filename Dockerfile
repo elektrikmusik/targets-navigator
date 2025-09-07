@@ -1,31 +1,55 @@
-# Dockerfile
+# Multi-stage Dockerfile for production optimization
 
-# Step 1: Use Node.js base image
-FROM node:18 AS build
+# Build stage
+FROM node:18-alpine AS build
 
-# Step 2: Set working directory
+# Set working directory
 WORKDIR /app
 
-# Step 3: Copy package.json and package-lock.json
+# Copy package files
 COPY package*.json ./
 
-# Step 4: Install dependencies with legacy peer dependencies option
-RUN npm install --legacy-peer-deps
+# Install dependencies with optimizations
+RUN npm ci --only=production --legacy-peer-deps && \
+    npm cache clean --force
 
-# Step 5: Copy the rest of the application code
+# Copy source code
 COPY . .
 
-# Step 6: Build the application
+# Build the application
 RUN npm run build
 
-# Step 7: Use a lightweight web server for the production build
+# Production stage
 FROM nginx:alpine AS production
 
-# Step 8: Copy built files from the previous stage
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy built application
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80 to access the app
-EXPOSE 80
+# Create non-root user for security
+RUN addgroup -g 1001 -S nginx && \
+    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
 
-# Start Nginx server
+# Set proper permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d
+
+# Switch to non-root user
+USER nginx
+
+# Expose ports
+EXPOSE 80 443
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]
