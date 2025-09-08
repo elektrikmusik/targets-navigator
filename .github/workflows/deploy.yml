@@ -51,25 +51,53 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           script: |
-            # Navigate to your application directory
-            cd /opt/targets-navigator
+            set -e
+
+            echo "🚀 Starting deployment process..."
+            echo "Timestamp: $(date)"
+
+            # Navigate to application directory
+            cd /opt/targets-navigator || { echo "❌ Failed to navigate to app directory"; exit 1; }
 
             # Pull latest changes
-            git pull origin main
+            echo "📥 Pulling latest changes..."
+            git pull origin main || { echo "❌ Failed to pull changes"; exit 1; }
 
-            # Build and deploy with Docker
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml build --no-cache
-            docker-compose -f docker-compose.prod.yml up -d
-
-            # Clean up old Docker images
-            docker system prune -f
-
-            # Check if application is running
-            sleep 10
-            if curl -f http://localhost > /dev/null 2>&1; then
-              echo "Deployment successful! Application is running."
-            else
-              echo "Deployment failed! Application is not responding."
+            # Check if required files exist
+            if [ ! -f docker-compose.prod.yml ]; then
+              echo "❌ docker-compose.prod.yml not found"
               exit 1
             fi
+
+            # Stop existing containers
+            echo "🛑 Stopping existing containers..."
+            docker-compose -f docker-compose.prod.yml down || true
+
+            # Build new containers
+            echo "🔨 Building new containers..."
+            docker-compose -f docker-compose.prod.yml build --no-cache || { echo "❌ Build failed"; exit 1; }
+
+            # Start containers
+            echo "🚀 Starting containers..."
+            docker-compose -f docker-compose.prod.yml up -d || { echo "❌ Failed to start containers"; exit 1; }
+
+            # Wait for application to start
+            echo "⏳ Waiting for application to start..."
+            sleep 15
+
+            # Health check (check internal port)
+            echo "🏥 Performing health check..."
+            if docker-compose -f docker-compose.prod.yml exec targets-navigator curl -f http://localhost > /dev/null 2>&1; then
+              echo "✅ Health check passed"
+            else
+              echo "❌ Health check failed"
+              docker-compose -f docker-compose.prod.yml logs --tail=20
+              exit 1
+            fi
+
+            # Clean up old Docker images
+            echo "🧹 Cleaning up old Docker images..."
+            docker system prune -f || true
+
+            echo "✅ Deployment successful! Application is running behind Traefik at https://targets.srv903155.hstgr.cloud"
+            echo "🕐 Deployment completed at: $(date)"
