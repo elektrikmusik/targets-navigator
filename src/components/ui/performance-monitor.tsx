@@ -100,6 +100,8 @@ export const PerformanceMonitor: React.FC = () => {
             <button
               onClick={() => setIsExpanded(false)}
               className="text-gray-400 hover:text-gray-600"
+              aria-label="Close performance monitor"
+              title="Close performance monitor"
             >
               <X className="h-4 w-4" />
             </button>

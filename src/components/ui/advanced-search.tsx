@@ -127,6 +127,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 setTempFilters((prev) => ({ ...prev, [`${filter.key}_operator`]: e.target.value }))
               }
               className="rounded border px-2 py-1 text-sm"
+              aria-label={`Comparison operator for ${filter.label}`}
             >
               <option value="equals">=</option>
               <option value="greater">&gt;</option>
@@ -186,6 +187,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               }
             }}
             className="w-full rounded border px-2 py-1"
+            aria-label={`Select ${filter.label}`}
           >
             <option value="">Select {filter.label}...</option>
             {filter.options?.map((option) => (
@@ -342,6 +344,8 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               <button
                 onClick={() => removeFilter(filter.key)}
                 className="ml-1 text-gray-400 hover:text-gray-600"
+                aria-label={`Remove ${filter.label} filter`}
+                title={`Remove ${filter.label} filter`}
               >
                 <X className="h-3 w-3" />
               </button>
