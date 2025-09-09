@@ -74,8 +74,8 @@ RUN apk update && \
 # Set timezone
 ENV TZ=UTC
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nginx && \
+# Create non-root user for security (check if group exists first)
+RUN (addgroup -g 1001 -S nginx || true) && \
     adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
 
 # Copy custom nginx configuration
