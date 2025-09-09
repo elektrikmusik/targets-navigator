@@ -249,9 +249,12 @@ export function DataTable<TData, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="bg-gray-50">
-                {headerGroup.headers.map((header) => {
+                {headerGroup.headers.map((header, headerIndex) => {
                   return (
-                    <TableHead key={header.id} className="font-semibold text-gray-900">
+                    <TableHead
+                      key={`${headerGroup.id}_${header.id}_${headerIndex}`}
+                      className="font-semibold text-gray-900"
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(header.column.columnDef.header, header.getContext())}
@@ -280,8 +283,8 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   className="transition-colors hover:bg-gray-50"
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                  {row.getVisibleCells().map((cell, cellIndex) => (
+                    <TableCell key={`${row.id}_${cell.column.id}_${cellIndex}`}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}

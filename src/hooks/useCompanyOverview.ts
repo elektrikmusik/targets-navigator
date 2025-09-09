@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase, CompanyOverview } from "@/lib/supabase";
 import { isTimeoutError } from "@/lib/retryUtils";
 
@@ -54,19 +54,105 @@ export const useCompanyOverview = (
     companyStates: [] as string[],
   });
 
-  const {
-    limit = 500, // Default to load all companies
-    searchTerm = "",
-    sortBy = "overallScore",
-    sortOrder = "desc",
-    filterBy = {},
-  } = options;
+  // Use refs to store the latest options to prevent infinite loops
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
-  // Memoize filterBy to prevent infinite loops
-  const memoizedFilterBy = useMemo(() => filterBy, [filterBy]);
+  // Remove this unused destructuring since we now use optionsRef.current directly in functions
 
-  // Fetch filter options from database
-  const fetchFilterOptions = useCallback(async () => {
+  // Memoized fetch function to prevent recreation
+  const fetchData = useCallback(async (page = 0, append = false) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const {
+        searchTerm: currentSearchTerm = "",
+        filterBy: currentFilterBy = {},
+        sortBy: currentSortBy = "overallScore",
+        sortOrder: currentSortOrder = "desc",
+        limit: currentLimit = 500,
+      } = optionsRef.current;
+
+      let query = supabase.from("company_overview").select("*", { count: "exact" });
+
+      // Apply search filter
+      if (currentSearchTerm.trim()) {
+        query = query.or(
+          `englishName.ilike.%${currentSearchTerm}%,companyName.ilike.%${currentSearchTerm}%`,
+        );
+      }
+
+      // Apply filters
+      if (currentFilterBy.country) {
+        query = query.eq("country", currentFilterBy.country);
+      }
+      if (currentFilterBy.ceres_region) {
+        query = query.eq("ceres_region", currentFilterBy.ceres_region);
+      }
+      if (currentFilterBy.company_state) {
+        query = query.eq("company_state", currentFilterBy.company_state);
+      }
+      if (currentFilterBy.tier) {
+        query = query.eq("Tier", currentFilterBy.tier);
+      }
+      if (currentFilterBy.minOverallScore !== undefined) {
+        query = query.gte("overallScore", currentFilterBy.minOverallScore);
+      }
+      if (currentFilterBy.maxOverallScore !== undefined) {
+        query = query.lte("overallScore", currentFilterBy.maxOverallScore);
+      }
+      if (currentFilterBy.minStrategicFit !== undefined) {
+        query = query.gte("strategicFit", currentFilterBy.minStrategicFit);
+      }
+      if (currentFilterBy.maxStrategicFit !== undefined) {
+        query = query.lte("strategicFit", currentFilterBy.maxStrategicFit);
+      }
+      if (currentFilterBy.minAbilityToExecute !== undefined) {
+        query = query.gte("abilityToExecute", currentFilterBy.minAbilityToExecute);
+      }
+      if (currentFilterBy.maxAbilityToExecute !== undefined) {
+        query = query.lte("abilityToExecute", currentFilterBy.maxAbilityToExecute);
+      }
+
+      // Apply sorting
+      query = query.order(currentSortBy, { ascending: currentSortOrder === "asc" });
+
+      // Apply pagination only if limit is reasonable
+      if (currentLimit < 1000) {
+        const offset = page * currentLimit;
+        query = query.range(offset, offset + currentLimit - 1);
+      }
+
+      const result = await query;
+      const { data: resultData, error, count } = result;
+
+      if (error) {
+        if (isTimeoutError(error)) {
+          throw new Error("Request timed out. Please try again.");
+        }
+        throw error;
+      }
+
+      const newData = resultData || [];
+      setTotalCount(count || 0);
+      setHasMore(currentLimit < 1000 && newData.length === currentLimit);
+
+      if (append) {
+        setData((prev) => [...prev, ...newData]);
+      } else {
+        setData(newData);
+      }
+      setCurrentPage(page);
+    } catch (err) {
+      console.error("Error fetching company overview data:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Empty dependency array since we use optionsRef.current inside
+
+  const fetchFilterOptions = async () => {
     try {
       const [countriesResult, ceresRegionsResult, tiersResult, companyStatesResult] =
         await Promise.all([
@@ -103,147 +189,72 @@ export const useCompanyOverview = (
     } catch (err) {
       console.error("Error fetching filter options:", err);
     }
-  }, []);
+  };
 
-  const fetchData = useCallback(
-    async (page = 0, append = false) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        let query = supabase.from("company_overview").select("*", { count: "exact" });
-
-        // Apply search filter
-        if (searchTerm.trim()) {
-          query = query.or(`englishName.ilike.%${searchTerm}%,companyName.ilike.%${searchTerm}%`);
-        }
-
-        // Apply filters
-        if (memoizedFilterBy.country) {
-          query = query.eq("country", memoizedFilterBy.country);
-        }
-        if (memoizedFilterBy.ceres_region) {
-          query = query.eq("ceres_region", memoizedFilterBy.ceres_region);
-        }
-        if (memoizedFilterBy.company_state) {
-          query = query.eq("company_state", memoizedFilterBy.company_state);
-        }
-        if (memoizedFilterBy.tier) {
-          query = query.eq("Tier", memoizedFilterBy.tier);
-        }
-        if (memoizedFilterBy.minOverallScore !== undefined) {
-          query = query.gte("overallScore", memoizedFilterBy.minOverallScore);
-        }
-        if (memoizedFilterBy.maxOverallScore !== undefined) {
-          query = query.lte("overallScore", memoizedFilterBy.maxOverallScore);
-        }
-        if (memoizedFilterBy.minStrategicFit !== undefined) {
-          query = query.gte("strategicFit", memoizedFilterBy.minStrategicFit);
-        }
-        if (memoizedFilterBy.maxStrategicFit !== undefined) {
-          query = query.lte("strategicFit", memoizedFilterBy.maxStrategicFit);
-        }
-        if (memoizedFilterBy.minAbilityToExecute !== undefined) {
-          query = query.gte("abilityToExecute", memoizedFilterBy.minAbilityToExecute);
-        }
-        if (memoizedFilterBy.maxAbilityToExecute !== undefined) {
-          query = query.lte("abilityToExecute", memoizedFilterBy.maxAbilityToExecute);
-        }
-
-        // Apply sorting
-        query = query.order(sortBy, { ascending: sortOrder === "asc" });
-
-        // Apply pagination only if limit is reasonable
-        if (limit < 1000) {
-          const offset = page * limit;
-          query = query.range(offset, offset + limit - 1);
-        }
-
-        const result = await query;
-        const { data: resultData, error, count } = result;
-
-        if (error) {
-          if (isTimeoutError(error)) {
-            throw new Error("Request timed out. Please try again.");
-          }
-          throw error;
-        }
-
-        const newData = resultData || [];
-        setTotalCount(count || 0);
-        setHasMore(limit < 1000 && newData.length === limit);
-
-        if (append) {
-          setData((prev) => [...prev, ...newData]);
-        } else {
-          setData(newData);
-        }
-        setCurrentPage(page);
-      } catch (err) {
-        console.error("Error fetching company overview data:", err);
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [limit, searchTerm, sortBy, sortOrder, memoizedFilterBy],
-  );
-
-  const fetchMore = useCallback(async () => {
+  const fetchMore = async () => {
     if (!hasMore || loading) return;
     await fetchData(currentPage + 1, true);
-  }, [currentPage, fetchData, hasMore, loading]);
+  };
 
-  const refresh = useCallback(async () => {
+  const refresh = async () => {
     await fetchData(0, false);
-  }, [fetchData]);
+  };
 
-  const loadAll = useCallback(async () => {
+  const loadAll = async () => {
     setLoading(true);
     setError(null);
 
     try {
+      const {
+        searchTerm: currentSearchTerm = "",
+        filterBy: currentFilterBy = {},
+        sortBy: currentSortBy = "overallScore",
+        sortOrder: currentSortOrder = "desc",
+      } = optionsRef.current;
+
       let query = supabase.from("company_overview").select("*", { count: "exact" });
 
       // Apply search filter
-      if (searchTerm.trim()) {
-        query = query.or(`englishName.ilike.%${searchTerm}%,companyName.ilike.%${searchTerm}%`);
+      if (currentSearchTerm.trim()) {
+        query = query.or(
+          `englishName.ilike.%${currentSearchTerm}%,companyName.ilike.%${currentSearchTerm}%`,
+        );
       }
 
       // Apply filters
-      if (filterBy.country) {
-        query = query.eq("country", filterBy.country);
+      if (currentFilterBy.country) {
+        query = query.eq("country", currentFilterBy.country);
       }
-      if (filterBy.ceres_region) {
-        query = query.eq("ceres_region", filterBy.ceres_region);
+      if (currentFilterBy.ceres_region) {
+        query = query.eq("ceres_region", currentFilterBy.ceres_region);
       }
-      if (filterBy.company_state) {
-        query = query.eq("company_state", filterBy.company_state);
+      if (currentFilterBy.company_state) {
+        query = query.eq("company_state", currentFilterBy.company_state);
       }
-      if (filterBy.tier) {
-        query = query.eq("Tier", filterBy.tier);
+      if (currentFilterBy.tier) {
+        query = query.eq("Tier", currentFilterBy.tier);
       }
-      if (filterBy.minOverallScore !== undefined) {
-        query = query.gte("overallScore", filterBy.minOverallScore);
+      if (currentFilterBy.minOverallScore !== undefined) {
+        query = query.gte("overallScore", currentFilterBy.minOverallScore);
       }
-      if (filterBy.maxOverallScore !== undefined) {
-        query = query.lte("overallScore", filterBy.maxOverallScore);
+      if (currentFilterBy.maxOverallScore !== undefined) {
+        query = query.lte("overallScore", currentFilterBy.maxOverallScore);
       }
-      if (filterBy.minStrategicFit !== undefined) {
-        query = query.gte("strategicFit", filterBy.minStrategicFit);
+      if (currentFilterBy.minStrategicFit !== undefined) {
+        query = query.gte("strategicFit", currentFilterBy.minStrategicFit);
       }
-      if (filterBy.maxStrategicFit !== undefined) {
-        query = query.lte("strategicFit", filterBy.maxStrategicFit);
+      if (currentFilterBy.maxStrategicFit !== undefined) {
+        query = query.lte("strategicFit", currentFilterBy.maxStrategicFit);
       }
-      if (filterBy.minAbilityToExecute !== undefined) {
-        query = query.gte("abilityToExecute", filterBy.minAbilityToExecute);
+      if (currentFilterBy.minAbilityToExecute !== undefined) {
+        query = query.gte("abilityToExecute", currentFilterBy.minAbilityToExecute);
       }
-      if (filterBy.maxAbilityToExecute !== undefined) {
-        query = query.lte("abilityToExecute", filterBy.maxAbilityToExecute);
+      if (currentFilterBy.maxAbilityToExecute !== undefined) {
+        query = query.lte("abilityToExecute", currentFilterBy.maxAbilityToExecute);
       }
 
       // Apply sorting
-      query = query.order(sortBy, { ascending: sortOrder === "asc" });
+      query = query.order(currentSortBy, { ascending: currentSortOrder === "asc" });
 
       const result = await query;
       const { data: resultData, error, count } = result;
@@ -266,27 +277,111 @@ export const useCompanyOverview = (
     } finally {
       setLoading(false);
     }
-  }, [
-    searchTerm,
-    sortBy,
-    sortOrder,
-    filterBy.ceres_region,
-    filterBy.company_state,
-    filterBy.country,
-    filterBy.maxAbilityToExecute,
-    filterBy.maxOverallScore,
-    filterBy.maxStrategicFit,
-    filterBy.minAbilityToExecute,
-    filterBy.minOverallScore,
-    filterBy.minStrategicFit,
-    filterBy.tier,
-  ]);
+  };
 
-  // Initial data fetch
+  // Initial data fetch - only run once on mount
   useEffect(() => {
-    fetchData(0, false);
+    let isMounted = true;
+
+    const loadData = async () => {
+      if (!isMounted) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const {
+          searchTerm: currentSearchTerm = "",
+          filterBy: currentFilterBy = {},
+          sortBy: currentSortBy = "overallScore",
+          sortOrder: currentSortOrder = "desc",
+          limit: currentLimit = 500,
+        } = optionsRef.current;
+
+        let query = supabase.from("company_overview").select("*", { count: "exact" });
+
+        // Apply search filter
+        if (currentSearchTerm.trim()) {
+          query = query.or(
+            `englishName.ilike.%${currentSearchTerm}%,companyName.ilike.%${currentSearchTerm}%`,
+          );
+        }
+
+        // Apply filters
+        if (currentFilterBy.country) {
+          query = query.eq("country", currentFilterBy.country);
+        }
+        if (currentFilterBy.ceres_region) {
+          query = query.eq("ceres_region", currentFilterBy.ceres_region);
+        }
+        if (currentFilterBy.company_state) {
+          query = query.eq("company_state", currentFilterBy.company_state);
+        }
+        if (currentFilterBy.tier) {
+          query = query.eq("Tier", currentFilterBy.tier);
+        }
+        if (currentFilterBy.minOverallScore !== undefined) {
+          query = query.gte("overallScore", currentFilterBy.minOverallScore);
+        }
+        if (currentFilterBy.maxOverallScore !== undefined) {
+          query = query.lte("overallScore", currentFilterBy.maxOverallScore);
+        }
+        if (currentFilterBy.minStrategicFit !== undefined) {
+          query = query.gte("strategicFit", currentFilterBy.minStrategicFit);
+        }
+        if (currentFilterBy.maxStrategicFit !== undefined) {
+          query = query.lte("strategicFit", currentFilterBy.maxStrategicFit);
+        }
+        if (currentFilterBy.minAbilityToExecute !== undefined) {
+          query = query.gte("abilityToExecute", currentFilterBy.minAbilityToExecute);
+        }
+        if (currentFilterBy.maxAbilityToExecute !== undefined) {
+          query = query.lte("abilityToExecute", currentFilterBy.maxAbilityToExecute);
+        }
+
+        // Apply sorting
+        query = query.order(currentSortBy, { ascending: currentSortOrder === "asc" });
+
+        // Apply pagination only if limit is reasonable
+        if (currentLimit < 1000) {
+          query = query.range(0, currentLimit - 1);
+        }
+
+        const result = await query;
+        const { data: resultData, error, count } = result;
+
+        if (!isMounted) return;
+
+        if (error) {
+          if (isTimeoutError(error)) {
+            throw new Error("Request timed out. Please try again.");
+          }
+          throw error;
+        }
+
+        const newData = resultData || [];
+        setTotalCount(count || 0);
+        setHasMore(currentLimit < 1000 && newData.length === currentLimit);
+        setData(newData);
+        setCurrentPage(0);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error("Error fetching company overview data:", err);
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
     fetchFilterOptions();
-  }, [fetchData, fetchFilterOptions]); // Include dependencies
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array - only run once
 
   return {
     data,

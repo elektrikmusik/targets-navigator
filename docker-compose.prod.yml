@@ -18,7 +18,8 @@ services:
       - GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - nginx_logs:/var/log/nginx
+    ports:
+      - "8080:80"
     networks:
       - traefik
     labels:

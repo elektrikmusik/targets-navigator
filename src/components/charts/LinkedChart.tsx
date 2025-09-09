@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { CompanyOverview } from "@/lib/supabase";
 import { CompanyBubbleChart } from "./CompanyBubbleChart";
 import { CompanyOverviewTable } from "@/components/tables/CompanyOverviewTable";
@@ -100,10 +100,12 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
     return filtered;
   }, [data, filterTiers, searchTerm]);
 
-  // Notify parent of filtered data changes
+  // Notify parent of filtered data changes - using useRef to avoid unnecessary re-runs
+  const lastFilteredDataRef = useRef(filteredData);
   React.useEffect(() => {
-    if (onDataFilter) {
+    if (onDataFilter && filteredData !== lastFilteredDataRef.current) {
       onDataFilter(filteredData);
+      lastFilteredDataRef.current = filteredData;
     }
   }, [filteredData, onDataFilter]);
 
