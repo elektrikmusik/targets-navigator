@@ -62,6 +62,66 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Validate SSH Key
+        run: |
+          echo "🔍 Validating SSH key format..."
+          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
+            echo "❌ VPS_SSH_KEY secret is empty or not set"
+            echo "📋 To generate a new SSH key pair:"
+            echo "1. Run: ssh-keygen -t rsa -b 4096 -C 'github-actions@yourdomain.com' -f ~/.ssh/vps_key"
+            echo "2. Copy the private key: cat ~/.ssh/vps_key"
+            echo "3. Add it as VPS_SSH_KEY secret in GitHub repository settings"
+            echo "4. Copy the public key: cat ~/.ssh/vps_key.pub"
+            echo "5. Add it to your VPS: ~/.ssh/authorized_keys"
+            exit 1
+          fi
+
+          # Check if key starts with proper header
+          if [[ "${{ secrets.VPS_SSH_KEY }}" == -----BEGIN* ]]; then
+            echo "✅ SSH key format appears correct (PEM format)"
+          else
+            echo "⚠️  SSH key format might be incorrect"
+            echo "Expected: -----BEGIN [KEY TYPE] PRIVATE KEY-----"
+            echo "Got: $(echo '${{ secrets.VPS_SSH_KEY }}' | head -c 50)..."
+            echo "📋 Make sure you're using the PRIVATE key, not the public key"
+          fi
+
+          # Check key length (basic validation)
+          KEY_LENGTH=$(echo "${{ secrets.VPS_SSH_KEY }}" | wc -c)
+          echo "📏 SSH key length: $KEY_LENGTH characters"
+
+          if [ $KEY_LENGTH -lt 1000 ]; then
+            echo "⚠️  SSH key seems too short (expected >1000 chars)"
+          else
+            echo "✅ SSH key length looks reasonable"
+          fi
+
+          # Check for common SSH key issues
+          if [[ "${{ secrets.VPS_SSH_KEY }}" == *"ssh-rsa"* ]]; then
+            echo "❌ You've provided the PUBLIC key instead of the PRIVATE key"
+            echo "📋 Use the private key (starts with -----BEGIN) for VPS_SSH_KEY"
+            exit 1
+          fi
+
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          debug: true
+          timeout: 30s
+          script: |
+            echo "🔍 Testing SSH connection..."
+            echo "Host: ${{ secrets.VPS_HOST }}"
+            echo "Username: ${{ secrets.VPS_USERNAME }}"
+            echo "Port: ${{ secrets.VPS_PORT || 22 }}"
+            echo "Current user: $(whoami)"
+            echo "Current directory: $(pwd)"
+            echo "SSH client version: $(ssh -V 2>&1)"
+            echo "✅ SSH connection successful!"
+
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -69,6 +129,11 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          debug: true
+          timeout: 60s
+          command_timeout: 10m
+          use_insecure_cipher: true
+          cipher: aes128-ctr,aes192-ctr,aes256-ctr
           script: |
             set -e  # Exit on any error
 
