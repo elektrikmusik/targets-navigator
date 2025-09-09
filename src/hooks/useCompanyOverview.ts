@@ -63,21 +63,7 @@ export const useCompanyOverview = (
   } = options;
 
   // Memoize filterBy to prevent infinite loops
-  const memoizedFilterBy = useMemo(
-    () => filterBy,
-    [
-      filterBy.country,
-      filterBy.ceres_region,
-      filterBy.company_state,
-      filterBy.tier,
-      filterBy.minOverallScore,
-      filterBy.maxOverallScore,
-      filterBy.minStrategicFit,
-      filterBy.maxStrategicFit,
-      filterBy.minAbilityToExecute,
-      filterBy.maxAbilityToExecute,
-    ],
-  );
+  const memoizedFilterBy = useMemo(() => filterBy, [filterBy]);
 
   // Fetch filter options from database
   const fetchFilterOptions = useCallback(async () => {
@@ -300,7 +286,7 @@ export const useCompanyOverview = (
   useEffect(() => {
     fetchData(0, false);
     fetchFilterOptions();
-  }, []); // Only run once on mount
+  }, [fetchData, fetchFilterOptions]); // Include dependencies
 
   return {
     data,
