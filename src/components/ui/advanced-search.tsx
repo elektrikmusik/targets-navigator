@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Badge } from "./badge";
@@ -62,7 +62,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       key: filterKey,
       label: filter.label,
       value,
-      operator,
+      operator: operator as "equals" | "contains" | "greater" | "less" | "between",
     };
 
     const updatedFilters = activeFilters.filter((f) => f.key !== filterKey);
@@ -97,14 +97,14 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
           <div className="flex gap-2">
             <Input
               placeholder={filter.placeholder || `Search ${filter.label}...`}
-              value={tempValue}
+              value={typeof tempValue === "string" ? tempValue : ""}
               onChange={(e) =>
                 setTempFilters((prev) => ({ ...prev, [filter.key]: e.target.value }))
               }
               className="flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  addFilter(filter.key, tempValue, "contains");
+                  addFilter(filter.key, typeof tempValue === "string" ? tempValue : "", "contains");
                 }
               }}
             />
@@ -122,7 +122,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
         return (
           <div className="flex gap-2">
             <select
-              value={tempFilters[`${filter.key}_operator`] || "equals"}
+              value={String(tempFilters[`${filter.key}_operator`] || "equals")}
               onChange={(e) =>
                 setTempFilters((prev) => ({ ...prev, [`${filter.key}_operator`]: e.target.value }))
               }
@@ -135,7 +135,11 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
             <Input
               type="number"
               placeholder="Value"
-              value={tempValue}
+              value={
+                typeof tempValue === "string" || typeof tempValue === "number"
+                  ? String(tempValue)
+                  : ""
+              }
               onChange={(e) =>
                 setTempFilters((prev) => ({ ...prev, [filter.key]: e.target.value }))
               }
@@ -144,8 +148,12 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 if (e.key === "Enter") {
                   addFilter(
                     filter.key,
-                    Number(tempValue),
-                    tempFilters[`${filter.key}_operator`] || "equals",
+                    Number(
+                      typeof tempValue === "string" || typeof tempValue === "number"
+                        ? tempValue
+                        : "",
+                    ),
+                    (tempFilters[`${filter.key}_operator`] as string) || "equals",
                   );
                 }
               }}
@@ -155,8 +163,10 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               onClick={() =>
                 addFilter(
                   filter.key,
-                  Number(tempValue),
-                  tempFilters[`${filter.key}_operator`] || "equals",
+                  Number(
+                    typeof tempValue === "string" || typeof tempValue === "number" ? tempValue : "",
+                  ),
+                  (tempFilters[`${filter.key}_operator`] as string) || "equals",
                 )
               }
               disabled={!tempValue}
@@ -169,7 +179,7 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       case "select":
         return (
           <select
-            value={tempValue}
+            value={typeof tempValue === "string" ? tempValue : ""}
             onChange={(e) => {
               if (e.target.value) {
                 addFilter(filter.key, e.target.value);
@@ -193,7 +203,12 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               <Input
                 type="number"
                 placeholder="Min"
-                value={tempFilters[`${filter.key}_min`] || ""}
+                value={
+                  typeof tempFilters[`${filter.key}_min`] === "string" ||
+                  typeof tempFilters[`${filter.key}_min`] === "number"
+                    ? String(tempFilters[`${filter.key}_min`])
+                    : ""
+                }
                 onChange={(e) =>
                   setTempFilters((prev) => ({ ...prev, [`${filter.key}_min`]: e.target.value }))
                 }
@@ -201,7 +216,12 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
               <Input
                 type="number"
                 placeholder="Max"
-                value={tempFilters[`${filter.key}_max`] || ""}
+                value={
+                  typeof tempFilters[`${filter.key}_max`] === "string" ||
+                  typeof tempFilters[`${filter.key}_max`] === "number"
+                    ? String(tempFilters[`${filter.key}_max`])
+                    : ""
+                }
                 onChange={(e) =>
                   setTempFilters((prev) => ({ ...prev, [`${filter.key}_max`]: e.target.value }))
                 }
@@ -215,7 +235,14 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
                 if (min || max) {
                   addFilter(
                     filter.key,
-                    { min: Number(min) || undefined, max: Number(max) || undefined },
+                    {
+                      min:
+                        Number(typeof min === "string" || typeof min === "number" ? min : "") ||
+                        undefined,
+                      max:
+                        Number(typeof max === "string" || typeof max === "number" ? max : "") ||
+                        undefined,
+                    },
                     "between",
                   );
                 }
@@ -324,80 +351,4 @@ export const AdvancedSearch: React.FC<AdvancedSearchProps> = ({
       )}
     </div>
   );
-};
-
-// Hook for managing advanced search state
-export const useAdvancedSearch = <T extends Record<string, unknown>>(
-  data: T[],
-  searchFields: (keyof T)[],
-) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([]);
-
-  const filteredData = useMemo(() => {
-    let result = [...data];
-
-    // Apply text search
-    if (searchTerm.trim()) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      result = result.filter((item) =>
-        searchFields.some((field) => {
-          const value = item[field];
-          return value && value.toString().toLowerCase().includes(lowerSearchTerm);
-        }),
-      );
-    }
-
-    // Apply filters
-    activeFilters.forEach((filter) => {
-      result = result.filter((item) => {
-        const itemValue = item[filter.key];
-
-        if (itemValue === undefined || itemValue === null) {
-          return false;
-        }
-
-        switch (filter.operator) {
-          case "contains": {
-            return itemValue
-              .toString()
-              .toLowerCase()
-              .includes(filter.value.toString().toLowerCase());
-          }
-          case "equals": {
-            return itemValue === filter.value;
-          }
-          case "greater": {
-            return Number(itemValue) > Number(filter.value);
-          }
-          case "less": {
-            return Number(itemValue) < Number(filter.value);
-          }
-          case "between": {
-            const numValue = Number(itemValue);
-            const rangeValue = filter.value as { min?: number; max?: number };
-            const min = rangeValue.min;
-            const max = rangeValue.max;
-            return (!min || numValue >= min) && (!max || numValue <= max);
-          }
-          default: {
-            return true;
-          }
-        }
-      });
-    });
-
-    return result;
-  }, [data, searchTerm, activeFilters, searchFields]);
-
-  return {
-    searchTerm,
-    setSearchTerm,
-    activeFilters,
-    setActiveFilters,
-    filteredData,
-    hasFilters: searchTerm.length > 0 || activeFilters.length > 0,
-    totalCount: data.length,
-    filteredCount: filteredData.length,
-  };
 };

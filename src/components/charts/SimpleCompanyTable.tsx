@@ -35,7 +35,9 @@ export const SimpleCompanyTable: React.FC<SimpleCompanyTableProps> = ({
                 }}
               />
             ) : (
-              <div className={`${AVATAR_SIZES.md} rounded-full bg-gray-200 flex items-center justify-center`}>
+              <div
+                className={`${AVATAR_SIZES.md} flex items-center justify-center rounded-full bg-gray-200`}
+              >
                 <Building2 className={ICON_SIZES.sm} />
               </div>
             )}
@@ -60,7 +62,9 @@ export const SimpleCompanyTable: React.FC<SimpleCompanyTableProps> = ({
   if (loading) {
     return (
       <div className={`flex items-center justify-center ${LOADING_DIMENSIONS.small}`}>
-        <div className={`animate-spin rounded-full ${LOADING_DIMENSIONS.spinner.lg} border-b-2 border-blue-600`}></div>
+        <div
+          className={`animate-spin rounded-full ${LOADING_DIMENSIONS.spinner.lg} border-b-2 border-blue-600`}
+        ></div>
       </div>
     );
   }
@@ -79,9 +83,7 @@ export const SimpleCompanyTable: React.FC<SimpleCompanyTableProps> = ({
         columns={columns}
         data={data}
         pageSize={10}
-        enableColumnFilters={false}
         enableGlobalFilter={false}
-        enablePagination={true}
         isLoading={loading}
         emptyMessage="No companies to display"
         tableKey="simple-company-table"

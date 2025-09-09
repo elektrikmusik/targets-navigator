@@ -127,7 +127,7 @@ const columns: ColumnDef<CompanyOverview>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company Name" />,
     cell: ({ row }) => {
       const englishName = row.getValue("englishName") as string;
-      const companyName = row.getValue("companyName") as string;
+      const companyName = row.original.companyName;
 
       return (
         <div className="flex flex-col space-y-1">

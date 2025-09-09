@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase, CompanyOverview } from "@/lib/supabase";
 import { isTimeoutError } from "@/lib/retryUtils";
 
@@ -63,18 +63,7 @@ export const useCompanyOverview = (
   } = options;
 
   // Memoize filterBy to prevent infinite loops
-  const memoizedFilterBy = useMemo(() => filterBy, [
-    filterBy.country,
-    filterBy.ceres_region,
-    filterBy.company_state,
-    filterBy.tier,
-    filterBy.minOverallScore,
-    filterBy.maxOverallScore,
-    filterBy.minStrategicFit,
-    filterBy.maxStrategicFit,
-    filterBy.minAbilityToExecute,
-    filterBy.maxAbilityToExecute,
-  ]);
+  const memoizedFilterBy = useMemo(() => filterBy, [filterBy]);
 
   // Fetch filter options from database
   const fetchFilterOptions = useCallback(async () => {
@@ -197,7 +186,7 @@ export const useCompanyOverview = (
         setLoading(false);
       }
     },
-    [limit, searchTerm, sortBy, sortOrder, filterBy],
+    [limit, searchTerm, sortBy, sortOrder, memoizedFilterBy],
   );
 
   const fetchMore = useCallback(async () => {
@@ -277,12 +266,26 @@ export const useCompanyOverview = (
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, sortBy, sortOrder, memoizedFilterBy]);
+  }, [
+    searchTerm,
+    sortBy,
+    sortOrder,
+    filterBy.ceres_region,
+    filterBy.company_state,
+    filterBy.country,
+    filterBy.maxAbilityToExecute,
+    filterBy.maxOverallScore,
+    filterBy.maxStrategicFit,
+    filterBy.minAbilityToExecute,
+    filterBy.minOverallScore,
+    filterBy.minStrategicFit,
+    filterBy.tier,
+  ]);
 
   useEffect(() => {
     fetchData(0, false);
     fetchFilterOptions();
-  }, [searchTerm, sortBy, sortOrder, memoizedFilterBy, fetchFilterOptions]);
+  }, [fetchData, fetchFilterOptions]);
 
   return {
     data,

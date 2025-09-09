@@ -28,7 +28,25 @@ export const useCompanyData = () => {
         .limit(limit);
 
       if (error) throw error;
-      setCompanies(data || []);
+
+      // Transform the data to match CompanyProfile interface
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        englishName: item.englishName,
+        companyName: item.companyName,
+        key: item.key,
+        basicInformation: item.basicInformation,
+        productServices: item.productServices,
+        marketPosition: item.marketPosition,
+        executiveTeam: null, // Not available in this query
+        customerSegments: null, // Not available in this query
+        products: null, // Not available in this query
+        news_md: null, // Not available in this query
+        sentiment_md: null, // Not available in this query
+      }));
+
+      setCompanies(transformedData);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
       console.error("Error fetching companies:", error);
@@ -162,7 +180,25 @@ export const useCompanyData = () => {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+
+      // Transform the data to match CompanyProfile interface
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        englishName: item.englishName,
+        companyName: item.companyName,
+        key: item.key,
+        basicInformation: item.basicInformation,
+        productServices: item.productServices,
+        marketPosition: item.marketPosition,
+        executiveTeam: null, // Not available in this query
+        customerSegments: null, // Not available in this query
+        products: null, // Not available in this query
+        news_md: null, // Not available in this query
+        sentiment_md: null, // Not available in this query
+      }));
+
+      return transformedData;
     } catch (error: unknown) {
       console.error("Error searching companies:", error);
       return [];

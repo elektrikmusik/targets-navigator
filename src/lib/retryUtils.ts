@@ -67,18 +67,27 @@ function sleep(ms: number): Promise<void> {
  * Determine if an error should not be retried
  */
 function shouldNotRetry(error: unknown): boolean {
+  // Type guard to check if error has code and message properties
+  const isErrorWithCode = (err: unknown): err is { code?: string; message?: string } => {
+    return typeof err === "object" && err !== null && ("code" in err || "message" in err);
+  };
+
+  if (!isErrorWithCode(error)) {
+    return false;
+  }
+
   // Don't retry authentication errors
-  if (error?.code === "PGRST301" || error?.code === "42501") {
+  if (error.code === "PGRST301" || error.code === "42501") {
     return true;
   }
 
   // Don't retry permission errors
-  if (error?.message?.toLowerCase().includes("permission denied")) {
+  if (error.message?.toLowerCase().includes("permission denied")) {
     return true;
   }
 
   // Don't retry syntax errors
-  if (error?.code === "42601" || error?.code === "42P01") {
+  if (error.code === "42601" || error.code === "42P01") {
     return true;
   }
 
@@ -89,9 +98,18 @@ function shouldNotRetry(error: unknown): boolean {
  * Check if an error is likely a timeout error
  */
 export function isTimeoutError(error: unknown): boolean {
+  // Type guard to check if error has code and message properties
+  const isErrorWithCode = (err: unknown): err is { code?: string; message?: string } => {
+    return typeof err === "object" && err !== null && ("code" in err || "message" in err);
+  };
+
+  if (!isErrorWithCode(error)) {
+    return false;
+  }
+
   return (
-    error?.code === "57014" || // PostgreSQL statement timeout
-    error?.message?.toLowerCase().includes("timeout") ||
-    error?.message?.toLowerCase().includes("canceling statement due to statement timeout")
+    error.code === "57014" || // PostgreSQL statement timeout
+    (error.message?.toLowerCase().includes("timeout") ?? false) ||
+    (error.message?.toLowerCase().includes("canceling statement due to statement timeout") ?? false)
   );
 }

@@ -92,7 +92,7 @@ export const LinkedChartPage = () => {
   }, [data, searchTerm]);
 
   // Handle company selection
-  const handleCompanySelect = (company: CompanyOverview) => {
+  const handleCompanySelect = (company: CompanyOverview | null) => {
     setSelectedCompany(company);
   };
 

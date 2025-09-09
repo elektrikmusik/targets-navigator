@@ -3,6 +3,16 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, CheckCircle, AlertCircle } from "lucide-react";
 import { useScoreRecalculation } from "@/hooks/useScoreRecalculation";
 
+interface RecalculationResult {
+  success: boolean;
+  message: string;
+  companies_updated?: number;
+  company_key?: number;
+  execution_time_ms?: number;
+  timestamp?: string;
+  error?: string;
+}
+
 interface ScoreRecalculationButtonProps {
   companyKey?: number;
   onSuccess?: () => void;
@@ -20,7 +30,7 @@ export const ScoreRecalculationButton = ({
 }: ScoreRecalculationButtonProps) => {
   const { loading, error, recalculateAllScores, recalculateCompanyScores } =
     useScoreRecalculation();
-  const [lastResult, setLastResult] = useState<Record<string, unknown> | null>(null);
+  const [lastResult, setLastResult] = useState<RecalculationResult | null>(null);
 
   const handleRecalculate = async () => {
     try {
@@ -70,7 +80,7 @@ export const ScoreRecalculationButton = ({
             : "Recalculate All Scores"}
       </Button>
 
-      {lastResult?.success && (
+      {lastResult?.success && lastResult.timestamp && (
         <span className="text-muted-foreground text-xs">
           Last run: {new Date(lastResult.timestamp).toLocaleTimeString()}
         </span>

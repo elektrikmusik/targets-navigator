@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Sidebar, SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { useSidebar } from "@/hooks/useSidebar";
 import {
   IconDashboard,
   IconBuilding,

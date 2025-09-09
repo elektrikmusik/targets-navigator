@@ -1,30 +1,16 @@
 "use client";
 import { cn } from "@/utils/cn";
-import React, { useState, createContext, useContext } from "react";
+import React, { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { IconMenu2, IconX } from "@tabler/icons-react";
+import { SidebarContext } from "@/context/sidebar-context";
+import { useSidebar } from "@/hooks/useSidebar";
 
 interface Links {
   label: string;
   href: string;
   icon: React.JSX.Element | React.ReactNode;
 }
-
-interface SidebarContextProps {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  animate: boolean;
-}
-
-const SidebarContext = createContext<SidebarContextProps | undefined>(undefined);
-
-export const useSidebar = () => {
-  const context = useContext(SidebarContext);
-  if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider");
-  }
-  return context;
-};
 
 export const SidebarProvider = ({
   children,

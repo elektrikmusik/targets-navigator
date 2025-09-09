@@ -10,15 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  Building2,
-  BarChart3,
-  Table,
-  Search,
-  EyeOff,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { Building2, BarChart3, Table, Search, EyeOff, TrendingUp, Users } from "lucide-react";
 import {
   ICON_SIZES,
   LOADING_DIMENSIONS,
@@ -46,7 +38,6 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
   loading = false,
   title = "Linked Chart Analysis",
   height = 500,
-  enableTableSync = true, // eslint-disable-line @typescript-eslint/no-unused-vars
   enableChartInteractions = true,
   enableFiltering = true,
   enableSearch = true,
@@ -55,33 +46,33 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
 }) => {
   // Calculate responsive height based on available space
   const [availableHeight, setAvailableHeight] = useState(height);
-  
+
   useEffect(() => {
     const calculateHeight = () => {
       const viewportHeight = getViewportHeight();
       const calculatedHeight = calculateChartHeight(viewportHeight);
       setAvailableHeight(calculatedHeight);
     };
-    
+
     calculateHeight();
-    window.addEventListener('resize', calculateHeight);
-    return () => window.removeEventListener('resize', calculateHeight);
+    window.addEventListener("resize", calculateHeight);
+    return () => window.removeEventListener("resize", calculateHeight);
   }, []);
   // State for chart-table synchronization
   const [selectedCompany, setSelectedCompany] = useState<CompanyOverview | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<CompanyOverview[]>([]);
   const [activeTab, setActiveTab] = useState<"chart" | "table" | "combined">("combined");
-  
+
   // Chart controls
   const [showLegend, setShowLegend] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [filterTiers, setFilterTiers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Get available tiers
   const availableTiers = useMemo(() => {
     if (!data) return [];
-    return Array.from(new Set(data.map(d => d.Tier).filter(Boolean))) as string[];
+    return Array.from(new Set(data.map((d) => d.Tier).filter(Boolean))) as string[];
   }, [data]);
 
   // Filter data based on search and tier filters
@@ -92,18 +83,17 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
 
     // Apply tier filter
     if (filterTiers.length > 0) {
-      filtered = filtered.filter(company =>
-        company.Tier && filterTiers.includes(company.Tier)
-      );
+      filtered = filtered.filter((company) => company.Tier && filterTiers.includes(company.Tier));
     }
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(company =>
-        (company.englishName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         company.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         company.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         company.primaryMarket?.toLowerCase().includes(searchTerm.toLowerCase()))
+      filtered = filtered.filter(
+        (company) =>
+          company.englishName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          company.primaryMarket?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -118,19 +108,22 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
   }, [filteredData, onDataFilter]);
 
   // Handle chart interactions
-  const handleBubbleClick = useCallback((company: CompanyOverview) => {
-    setSelectedCompany(company);
-    if (!selectedCompanies.find(c => c.key === company.key)) {
-      setSelectedCompanies(prev => [...prev, company]);
-    }
-    if (onCompanySelect) {
-      onCompanySelect(company);
-    }
-    // Switch to table view when company is selected
-    if (activeTab === "chart") {
-      setActiveTab("combined");
-    }
-  }, [selectedCompanies, onCompanySelect, activeTab]);
+  const handleBubbleClick = useCallback(
+    (company: CompanyOverview) => {
+      setSelectedCompany(company);
+      if (!selectedCompanies.find((c) => c.key === company.key)) {
+        setSelectedCompanies((prev) => [...prev, company]);
+      }
+      if (onCompanySelect) {
+        onCompanySelect(company);
+      }
+      // Switch to table view when company is selected
+      if (activeTab === "chart") {
+        setActiveTab("combined");
+      }
+    },
+    [selectedCompanies, onCompanySelect, activeTab],
+  );
 
   const handleBubbleHover = useCallback(() => {
     // Could show tooltip or update state here
@@ -143,10 +136,8 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
   const toggleGrid = () => setShowGrid(!showGrid);
 
   const toggleTier = (tier: string) => {
-    setFilterTiers(prev =>
-      prev.includes(tier)
-        ? prev.filter(t => t !== tier)
-        : [...prev, tier]
+    setFilterTiers((prev) =>
+      prev.includes(tier) ? prev.filter((t) => t !== tier) : [...prev, tier],
     );
   };
 
@@ -167,12 +158,15 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
   const selectedStats = useMemo(() => {
     if (selectedCompanies.length === 0) return null;
 
-    const avgOverallScore = selectedCompanies.reduce((sum, company) => 
-      sum + (Number(company.overallScore) || 0), 0) / selectedCompanies.length;
-    const avgStrategicFit = selectedCompanies.reduce((sum, company) => 
-      sum + (Number(company.strategicFit) || 0), 0) / selectedCompanies.length;
-    const avgAbilityToExecute = selectedCompanies.reduce((sum, company) => 
-      sum + (Number(company.abilityToExecute) || 0), 0) / selectedCompanies.length;
+    const avgOverallScore =
+      selectedCompanies.reduce((sum, company) => sum + (Number(company.overallScore) || 0), 0) /
+      selectedCompanies.length;
+    const avgStrategicFit =
+      selectedCompanies.reduce((sum, company) => sum + (Number(company.strategicFit) || 0), 0) /
+      selectedCompanies.length;
+    const avgAbilityToExecute =
+      selectedCompanies.reduce((sum, company) => sum + (Number(company.abilityToExecute) || 0), 0) /
+      selectedCompanies.length;
 
     return {
       count: selectedCompanies.length,
@@ -186,8 +180,10 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
     return (
       <div className={`flex items-center justify-center ${LOADING_DIMENSIONS.large}`}>
         <div className="text-center">
-          <div className="text-blue-500 mb-4">Loading data...</div>
-          <div className={`animate-spin rounded-full ${LOADING_DIMENSIONS.spinner.lg} border-b-2 border-blue-500 mx-auto`}></div>
+          <div className="mb-4 text-blue-500">Loading data...</div>
+          <div
+            className={`animate-spin rounded-full ${LOADING_DIMENSIONS.spinner.lg} mx-auto border-b-2 border-blue-500`}
+          ></div>
         </div>
       </div>
     );
@@ -197,7 +193,7 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
     return (
       <div className={`flex items-center justify-center ${LOADING_DIMENSIONS.large}`}>
         <div className="text-center">
-          <div className="text-gray-500 mb-4">No data available</div>
+          <div className="mb-4 text-gray-500">No data available</div>
           <p className="text-sm text-gray-400">Check your data source and try again</p>
         </div>
       </div>
@@ -205,24 +201,26 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col space-y-6">
+    <div className="flex h-full flex-col space-y-6">
       {/* Header */}
-      <div className="flex-shrink-0 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div className="mb-6 flex-shrink-0">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 truncate">{title}</h2>
+            <h2 className="truncate text-xl font-bold text-gray-900 lg:text-2xl">{title}</h2>
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
       {enableSearch && (
-        <div className="flex-shrink-0 mb-6">
+        <div className="mb-6 flex-shrink-0">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1">
               <Label htmlFor="search">Search Companies</Label>
               <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${ICON_SIZES.sm} text-gray-400`} />
+                <Search
+                  className={`absolute top-1/2 left-3 -translate-y-1/2 transform ${ICON_SIZES.sm} text-gray-400`}
+                />
                 <Input
                   id="search"
                   placeholder="Search by name, country, or market..."
@@ -236,19 +234,11 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
               <div className="flex gap-2">
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="legend-toggle">Legend</Label>
-                  <Switch
-                    id="legend-toggle"
-                    checked={showLegend}
-                    onCheckedChange={toggleLegend}
-                  />
+                  <Switch id="legend-toggle" checked={showLegend} onCheckedChange={toggleLegend} />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="grid-toggle">Grid</Label>
-                  <Switch
-                    id="grid-toggle"
-                    checked={showGrid}
-                    onCheckedChange={toggleGrid}
-                  />
+                  <Switch id="grid-toggle" checked={showGrid} onCheckedChange={toggleGrid} />
                 </div>
               </div>
             )}
@@ -258,7 +248,7 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
 
       {/* Tier Filters */}
       {enableFiltering && availableTiers.length > 0 && (
-        <div className="flex-shrink-0 mb-6">
+        <div className="mb-6 flex-shrink-0">
           <div className="flex flex-wrap gap-2">
             <Label className="text-sm font-medium">Tier Filters:</Label>
             {availableTiers.map((tier) => (
@@ -282,7 +272,7 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
 
       {/* Selected Companies Stats */}
       {selectedStats && (
-        <div className="flex-shrink-0 mb-6">
+        <div className="mb-6 flex-shrink-0">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -291,32 +281,38 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent>
-            <div className={GRID_CONFIGS.details}>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Avg Overall Score</Label>
-                <div className="text-2xl font-bold">{selectedStats.avgOverallScore}</div>
+              <div className={GRID_CONFIGS.details}>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Avg Overall Score</Label>
+                  <div className="text-2xl font-bold">{selectedStats.avgOverallScore}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Avg Strategic Fit</Label>
+                  <div className="text-2xl font-bold">{selectedStats.avgStrategicFit}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Avg Ability to Execute
+                  </Label>
+                  <div className="text-2xl font-bold">{selectedStats.avgAbilityToExecute}</div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Total Selected</Label>
+                  <div className="text-2xl font-bold">{selectedStats.count}</div>
+                </div>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Avg Strategic Fit</Label>
-                <div className="text-2xl font-bold">{selectedStats.avgStrategicFit}</div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Avg Ability to Execute</Label>
-                <div className="text-2xl font-bold">{selectedStats.avgAbilityToExecute}</div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-500">Total Selected</Label>
-                <div className="text-2xl font-bold">{selectedStats.count}</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "chart" | "table" | "combined")} className="h-full flex flex-col">
+      <div className="min-h-0 flex-1">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as "chart" | "table" | "combined")}
+          className="flex h-full flex-col"
+        >
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="chart" className="flex items-center gap-2">
               <BarChart3 className={ICON_SIZES.sm} />
@@ -332,15 +328,15 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="chart" className="flex-1 min-h-0">
-            <Card className="h-full flex flex-col">
+          <TabsContent value="chart" className="min-h-0 flex-1">
+            <Card className="flex h-full flex-col">
               <CardHeader className="flex-shrink-0">
                 <CardDescription>
                   Interactive visualization showing Strategic Fit vs Ability to Execute
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 min-h-0">
-                <div className="w-full h-full">
+              <CardContent className="min-h-0 flex-1">
+                <div className="h-full w-full">
                   <CompanyBubbleChart
                     data={filteredData}
                     title=""
@@ -360,16 +356,16 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
             </Card>
           </TabsContent>
 
-          <TabsContent value="table" className="flex-1 min-h-0">
-            <Card className="h-full flex flex-col">
+          <TabsContent value="table" className="min-h-0 flex-1">
+            <Card className="flex h-full flex-col">
               <CardHeader className="flex-shrink-0">
                 <CardTitle>Company Overview Table</CardTitle>
                 <CardDescription>
                   Detailed tabular view with sorting, filtering, and search capabilities
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-1 min-h-0">
-                <div className="w-full h-full">
+              <CardContent className="min-h-0 flex-1">
+                <div className="h-full w-full">
                   <CompanyOverviewTable
                     data={filteredData}
                     loading={loading}
@@ -380,19 +376,17 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
             </Card>
           </TabsContent>
 
-          <TabsContent value="combined" className="flex-1 min-h-0">
+          <TabsContent value="combined" className="min-h-0 flex-1">
             <div className={`${GRID_CONFIGS.chartLayout} h-full`}>
               {/* Chart - 2/3 width */}
               <div className="lg:col-span-2">
-                <Card className="h-full flex flex-col">
+                <Card className="flex h-full flex-col">
                   <CardHeader className="flex-shrink-0">
                     <CardTitle>Bubble Chart</CardTitle>
-                    <CardDescription>
-                      Click on bubbles to select companies
-                    </CardDescription>
+                    <CardDescription>Click on bubbles to select companies</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-1 min-h-0">
-                    <div className="w-full h-full">
+                  <CardContent className="min-h-0 flex-1">
+                    <div className="h-full w-full">
                       <CompanyBubbleChart
                         data={filteredData}
                         title=""
@@ -413,15 +407,13 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
               </div>
               {/* Table - 1/3 width */}
               <div className="lg:col-span-1">
-                <Card className="h-full flex flex-col">
+                <Card className="flex h-full flex-col">
                   <CardHeader className="flex-shrink-0">
                     <CardTitle>Company Table</CardTitle>
-                    <CardDescription>
-                      Selected companies and detailed information
-                    </CardDescription>
+                    <CardDescription>Selected companies and detailed information</CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-1 min-h-0">
-                    <div className="w-full h-full">
+                  <CardContent className="min-h-0 flex-1">
+                    <div className="h-full w-full">
                       <SimpleCompanyTable
                         data={filteredData}
                         loading={loading}
@@ -475,9 +467,7 @@ export const LinkedChart: React.FC<LinkedChartProps> = ({
               <div>
                 <Label className="text-sm font-medium text-gray-500">Tier</Label>
                 <div className="mt-1">
-                  <Badge variant="secondary">
-                    {selectedCompany.Tier || "N/A"}
-                  </Badge>
+                  <Badge variant="secondary">{selectedCompany.Tier || "N/A"}</Badge>
                 </div>
               </div>
             </div>

@@ -92,17 +92,19 @@ export function DataTable<TData, TValue>({
 
   // Save column visibility to localStorage
   const handleColumnVisibilityChange = React.useCallback(
-    (visibility: VisibilityState) => {
-      setColumnVisibility(visibility);
+    (updaterOrValue: VisibilityState | ((old: VisibilityState) => VisibilityState)) => {
+      const newVisibility =
+        typeof updaterOrValue === "function" ? updaterOrValue(columnVisibility) : updaterOrValue;
+      setColumnVisibility(newVisibility);
       if (tableKey) {
         try {
-          localStorage.setItem(`table-columns-${tableKey}`, JSON.stringify(visibility));
+          localStorage.setItem(`table-columns-${tableKey}`, JSON.stringify(newVisibility));
         } catch (error) {
           console.warn("Failed to save column preferences:", error);
         }
       }
     },
-    [tableKey],
+    [tableKey, columnVisibility],
   );
 
   const table = useReactTable({
