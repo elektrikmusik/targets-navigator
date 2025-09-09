@@ -16,7 +16,7 @@ RUN addgroup -g 1001 -S nodejs && \
 
 # Copy package files first for better layer caching
 COPY package*.json ./
-COPY bun.lockb ./
+COPY bun.lockb* ./
 
 # Install dependencies with security optimizations
 RUN npm ci --only=production --legacy-peer-deps --no-audit --no-fund && \
