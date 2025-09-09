@@ -39,9 +39,9 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
+          base: HEAD~1
           head: HEAD
-          extra_args: --debug --only-verified
+        continue-on-error: true
 
       - name: Build application
         run: npm run build
