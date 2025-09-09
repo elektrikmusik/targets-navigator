@@ -18,6 +18,9 @@ DOCKER_COMPOSE_FILE="docker-compose.prod.yml"
 BACKUP_DIR="./backups"
 LOG_FILE="./deployment.log"
 
+# Set default environment variables
+export GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-admin123}"
+
 # Functions
 log() {
     echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1" | tee -a "$LOG_FILE"
@@ -60,6 +63,12 @@ check_prerequisites() {
         error "nginx.conf not found"
     fi
     
+    # Ensure Traefik network exists
+    if ! docker network ls | grep -q "traefik"; then
+        log "Creating Traefik network..."
+        docker network create traefik || error "Failed to create Traefik network"
+    fi
+    
     success "Prerequisites check passed"
 }
 
@@ -87,8 +96,10 @@ create_backup() {
 build_application() {
     log "Building application..."
     
-    # Clean previous builds
-    docker system prune -f --volumes || warning "Failed to clean Docker system"
+    # Clean previous builds but preserve networks
+    docker image prune -f || warning "Failed to clean Docker images"
+    docker container prune -f || warning "Failed to clean stopped containers"
+    docker volume prune -f || warning "Failed to clean unused volumes"
     
     # Build the application
     docker-compose -f "$DOCKER_COMPOSE_FILE" build --no-cache --pull || error "Failed to build application"
@@ -113,18 +124,22 @@ deploy_application() {
 health_check() {
     log "Performing health check..."
     
-    local max_attempts=30
+    local max_attempts=10
     local attempt=1
     
     while [ $attempt -le $max_attempts ]; do
         log "Health check attempt $attempt/$max_attempts"
         
-        if docker-compose -f "$DOCKER_COMPOSE_FILE" ps | grep -q "Up (healthy)"; then
-            success "Application is healthy"
-            return 0
+        # Check if container is running
+        if docker-compose -f "$DOCKER_COMPOSE_FILE" ps | grep -q "Up"; then
+            # Test the health endpoint
+            if curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+                success "Application is healthy"
+                return 0
+            fi
         fi
         
-        sleep 10
+        sleep 5
         ((attempt++))
     done
     

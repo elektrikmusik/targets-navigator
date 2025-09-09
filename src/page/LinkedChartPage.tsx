@@ -2,8 +2,8 @@
 
 import { useState, useMemo, useRef } from "react";
 import { CompanyOverview } from "@/lib/supabase";
-import { LinkedChart } from "@/components/charts/LinkedChart";
 import { useCompanyOverview } from "@/hooks/useCompanyOverview";
+import { LinkedChart } from "@/components/charts/LinkedChart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RefreshCw, X, Download, Building2, EyeOff } from "lucide-react";
@@ -64,7 +64,10 @@ const SelectedCompanyDetails = ({
 };
 
 export const LinkedChartPage = () => {
-  const { data, loading, error } = useCompanyOverview();
+  // Use the original hook as it was working yesterday
+  const { data, loading, error } = useCompanyOverview({
+    limit: 500,
+  });
   const [selectedCompany, setSelectedCompany] = useState<CompanyOverview | null>(null);
   const [searchTerm] = useState("");
 

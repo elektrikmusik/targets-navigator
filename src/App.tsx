@@ -51,45 +51,6 @@ const App = () => {
       </BrowserRouter>
     </ErrorBoundary>
   );
-
-  return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <AppLayout>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <Suspense fallback={<DashboardSkeleton />}>
-                  <Home />
-                </Suspense>
-              }
-              errorElement={<RootErrorBoundary />}
-            />
-            <Route
-              path="/overview"
-              element={
-                <Suspense fallback={<DashboardSkeleton />}>
-                  <CompanyOverviewDashboard />
-                </Suspense>
-              }
-              errorElement={<RootErrorBoundary />}
-            />
-            <Route
-              path="/charts"
-              element={
-                <Suspense fallback={<DashboardSkeleton />}>
-                  <LinkedChartPage />
-                </Suspense>
-              }
-              errorElement={<RootErrorBoundary />}
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AppLayout>
-      </BrowserRouter>
-    </ErrorBoundary>
-  );
 };
 
 export default App;

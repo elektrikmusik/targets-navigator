@@ -18,8 +18,8 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY package*.json ./
 COPY bun.lockb* ./
 
-# Install dependencies with security optimizations
-RUN npm ci --only=production --legacy-peer-deps --no-audit --no-fund --ignore-scripts && \
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --legacy-peer-deps --no-audit --no-fund --ignore-scripts && \
     npm cache clean --force && \
     rm -rf /tmp/* /var/cache/apk/*
 
@@ -35,8 +35,10 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 # Build the application
-RUN npm run build && \
-    rm -rf node_modules && \
+RUN npm run build
+
+# Clean up build dependencies and source files
+RUN rm -rf node_modules && \
     rm -rf src && \
     rm -rf public && \
     rm -rf .git && \
@@ -45,10 +47,6 @@ RUN npm run build && \
     rm -rf migrations && \
     rm -rf supabase && \
     rm -rf *.md && \
-    rm -rf *.json && \
-    rm -rf *.js && \
-    rm -rf *.ts && \
-    rm -rf *.config.* && \
     rm -rf .eslintrc.* && \
     rm -rf .gitignore && \
     rm -rf .cursor && \
@@ -57,7 +55,9 @@ RUN npm run build && \
     rm -rf tsconfig.* && \
     rm -rf vite.config.* && \
     rm -rf global.d.ts && \
-    rm -rf auto-imports.d.ts
+    rm -rf auto-imports.d.ts && \
+    rm -rf package*.json && \
+    rm -rf bun.lockb*
 
 # Production stage
 FROM nginx:1.25-alpine AS production
