@@ -19,7 +19,7 @@ COPY package*.json ./
 COPY bun.lockb* ./
 
 # Install dependencies with security optimizations
-RUN npm ci --only=production --legacy-peer-deps --no-audit --no-fund && \
+RUN npm ci --only=production --legacy-peer-deps --no-audit --no-fund --ignore-scripts && \
     npm cache clean --force && \
     rm -rf /tmp/* /var/cache/apk/*
 
