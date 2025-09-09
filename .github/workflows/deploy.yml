@@ -5,35 +5,60 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip tests (emergency deployment)"
+        required: false
+        default: false
+        type: boolean
 
 # Security: Prevent workflow from running on forks
 permissions:
   contents: read
   security-events: write
+  actions: read
+  id-token: write
+
+env:
+  NODE_VERSION: "20"
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
-  test:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      skip_tests: ${{ steps.check.outputs.skip_tests }}
+
+    steps:
+      - name: Check deployment conditions
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "skip_tests=${{ github.event.inputs.skip_tests }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/main" ] && [ "${{ github.event_name }}" == "push" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+          fi
+
+  security-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    if: needs.validate.outputs.skip_tests != 'true'
+    needs: validate
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: "18"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Security audit
-        run: npm audit --audit-level=high || true
+          fetch-depth: 0
 
       - name: Check for secrets
         uses: trufflesecurity/trufflehog@main
@@ -41,49 +66,159 @@ jobs:
           path: ./
           base: HEAD~1
           head: HEAD
-        continue-on-error: true
+          extra_args: --debug --only-verified
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: typescript, javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: needs.validate.outputs.skip_tests != 'true'
+    needs: validate
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+        fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          registry-url: https://registry.npmjs.org
+
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --prefer-offline --no-audit
+
+      - name: Type checking
+        run: npx tsc --noEmit
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Security audit
+        run: |
+          npm audit --audit-level=high --omit=dev || {
+            echo "Security vulnerabilities found in production dependencies"
+            npm audit --audit-level=high --omit=dev --json > audit-results.json
+            echo "Audit results saved to audit-results.json"
+            exit 1
+          }
 
       - name: Build application
         run: npm run build
         env:
+          NODE_ENV: production
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: dist/
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    timeout-minutes: 15
-
-    steps:
-      - name: Validate SSH Key
+      - name: Test build output
         run: |
-          echo "🔍 Validating SSH key format..."
-          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
-            echo "❌ VPS_SSH_KEY secret is empty or not set"
-            echo "📋 To generate a new SSH key pair:"
-            echo "1. Run: ssh-keygen -t rsa -b 4096 -C 'github-actions@yourdomain.com' -f ~/.ssh/vps_key"
-            echo "2. Copy the private key: cat ~/.ssh/vps_key"
-            echo "3. Add it as VPS_SSH_KEY secret in GitHub repository settings"
-            echo "4. Copy the public key: cat ~/.ssh/vps_key.pub"
-            echo "5. Add it to your VPS: ~/.ssh/authorized_keys"
+          if [ ! -d "dist" ]; then
+            echo "Build failed: dist directory not found"
             exit 1
           fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "Build failed: index.html not found"
+            exit 1
+          fi
+          echo "Build size: $(du -sh dist/)"
+
+      - name: Upload build artifacts (Primary Node Version)
+        if: matrix.node-version == 20
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-files-${{ github.run_id }}
+          path: dist/
+          retention-days: 7
+
+  deploy:
+    needs: [validate, test, security-scan]
+    runs-on: ubuntu-latest
+    if: always() && needs.validate.outputs.should_deploy == 'true' && (success() || needs.validate.outputs.skip_tests == 'true')
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://targets.srv903155.hstgr.cloud
+
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/
+            deploy-production.sh
+            docker-compose.prod.yml
+            nginx.conf
+            Dockerfile
+
+      - name: Download build artifacts
+        if: needs.validate.outputs.skip_tests != 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-files-${{ github.run_id }}
+          path: dist/
+
+      - name: Validate required secrets
+        run: |
+          echo "🔍 Validating required secrets..."
+          missing_secrets=""
+
+          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
+            missing_secrets="${missing_secrets}VPS_SSH_KEY "
+          fi
+          if [ -z "${{ secrets.VPS_HOST }}" ]; then
+            missing_secrets="${missing_secrets}VPS_HOST "
+          fi
+          if [ -z "${{ secrets.VPS_USERNAME }}" ]; then
+            missing_secrets="${missing_secrets}VPS_USERNAME "
+          fi
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            missing_secrets="${missing_secrets}VITE_SUPABASE_URL "
+          fi
+          if [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
+            missing_secrets="${missing_secrets}VITE_SUPABASE_ANON_KEY "
+          fi
+
+          if [ -n "$missing_secrets" ]; then
+            echo "❌ Missing required secrets: $missing_secrets"
+            echo "📋 Please add these secrets to your repository settings"
+            exit 1
+          fi
+
+          echo "✅ All required secrets are present"
+
+      - name: Validate SSH Key Format
+        run: |
+          echo "🔍 Validating SSH key format..."
 
           # Check if key starts with proper header
           if [[ "${{ secrets.VPS_SSH_KEY }}" == -----BEGIN* ]]; then
             echo "✅ SSH key format appears correct (PEM format)"
           else
-            echo "⚠️  SSH key format might be incorrect"
-            echo "Expected: -----BEGIN [KEY TYPE] PRIVATE KEY-----"
-            echo "Got: $(echo '${{ secrets.VPS_SSH_KEY }}' | head -c 50)..."
-            echo "📋 Make sure you're using the PRIVATE key, not the public key"
+            echo "❌ SSH key format incorrect. Expected: -----BEGIN [KEY TYPE] PRIVATE KEY-----"
+            exit 1
           fi
 
           # Check key length (basic validation)
@@ -91,17 +226,17 @@ jobs:
           echo "📏 SSH key length: $KEY_LENGTH characters"
 
           if [ $KEY_LENGTH -lt 1000 ]; then
-            echo "⚠️  SSH key seems too short (expected >1000 chars)"
-          else
-            echo "✅ SSH key length looks reasonable"
+            echo "❌ SSH key too short (expected >1000 chars)"
+            exit 1
           fi
 
           # Check for common SSH key issues
           if [[ "${{ secrets.VPS_SSH_KEY }}" == *"ssh-rsa"* ]]; then
             echo "❌ You've provided the PUBLIC key instead of the PRIVATE key"
-            echo "📋 Use the private key (starts with -----BEGIN) for VPS_SSH_KEY"
             exit 1
           fi
+
+          echo "✅ SSH key validation passed"
 
       - name: Test SSH Connection
         uses: appleboy/ssh-action@v1.0.3
@@ -110,7 +245,6 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          debug: true
           timeout: 30s
           script: |
             echo "🔍 Testing SSH connection..."
@@ -119,126 +253,285 @@ jobs:
             echo "Port: ${{ secrets.VPS_PORT || 22 }}"
             echo "Current user: $(whoami)"
             echo "Current directory: $(pwd)"
-            echo "SSH client version: $(ssh -V 2>&1)"
+            echo "System info: $(uname -a)"
             echo "✅ SSH connection successful!"
 
-      - name: Deploy to VPS
+      - name: Create deployment backup
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          debug: true
           timeout: 60s
-          command_timeout: 10m
-          use_insecure_cipher: true
-          cipher: aes128-ctr,aes192-ctr,aes256-ctr
           script: |
-            set -e  # Exit on any error
+            set -e
+            echo "🗄️ Creating deployment backup..."
+
+            # Create backup directory if it doesn't exist
+            mkdir -p /opt/targets-navigator/backups
+
+            # Create backup with timestamp
+            BACKUP_NAME="backup-$(date +'%Y%m%d-%H%M%S')-${{ github.sha }}"
+
+            # Backup current containers if they exist
+            if docker ps -q -f name="targets-navigator" | grep -q .; then
+              echo "Creating container backup: $BACKUP_NAME"
+              docker commit targets-navigator-app targets-navigator:$BACKUP_NAME || echo "No running container to backup"
+            fi
+
+            echo "✅ Backup created: $BACKUP_NAME"
+
+      - name: Deploy to VPS
+        id: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 10m
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
 
             echo "🚀 Starting deployment process..."
+            echo "Deployment ID: ${{ github.run_id }}"
+            echo "Commit SHA: ${{ github.sha }}"
             echo "Timestamp: $(date)"
 
+            # Function to log with timestamps
+            log() {
+                echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+            }
+
             # Navigate to application directory
-            cd /opt/targets-navigator || { echo "❌ Failed to navigate to app directory"; exit 1; }
+            cd /opt/targets-navigator || {
+                log "❌ Application directory not found. Creating..."
+                sudo mkdir -p /opt/targets-navigator
+                sudo chown $(whoami):$(whoami) /opt/targets-navigator
+                cd /opt/targets-navigator
+            }
 
-            # Check if we're in a git repository
+            # Initialize or update git repository
             if [ ! -d .git ]; then
-              echo "❌ Not in a git repository. Cloning..."
-              cd /opt
-              rm -rf targets-navigator
-              git clone https://github.com/elektrikmusik/targets-navigator.git
-              cd targets-navigator
+                log "📥 Cloning repository..."
+                git clone https://github.com/elektrikmusik/targets-navigator.git .
+            else
+                log "📥 Pulling latest changes..."
+                git fetch origin
+                git reset --hard origin/main
             fi
 
-            # Pull latest changes
-            echo "📥 Pulling latest changes..."
-            git pull origin main || { echo "❌ Failed to pull changes"; exit 1; }
+            # Verify required files exist
+            log "🔍 Verifying deployment files..."
+            for file in "docker-compose.prod.yml" "Dockerfile" "nginx.conf"; do
+                if [ ! -f "$file" ]; then
+                    log "❌ Required file missing: $file"
+                    exit 1
+                fi
+            done
 
-            # Check if required files exist
-            if [ ! -f docker-compose.prod.yml ]; then
-              echo "❌ docker-compose.prod.yml not found"
-              exit 1
-            fi
-
-            # Create .env.production file with secrets
-            echo "📝 Creating .env.production file..."
+            # Create comprehensive .env.production file
+            log "📝 Creating production environment file..."
             cat > .env.production << 'EOF'
+            # Application Configuration
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             VITE_APP_ENV=production
             NODE_ENV=production
+
+            # System Configuration
             TZ=UTC
+
+            # Monitoring Configuration
             GRAFANA_ADMIN_PASSWORD=admin123
+
+            # Nginx Configuration
             NGINX_WORKER_PROCESSES=auto
             NGINX_WORKER_CONNECTIONS=1024
             LOG_LEVEL=info
             ACCESS_LOG_FORMAT=main
+
+            # Compression Settings
             GZIP_COMPRESSION=on
             BROTLI_COMPRESSION=off
+
+            # Cache Settings
             CACHE_STATIC_ASSETS=1y
             CACHE_HTML_FILES=1h
+
+            # Rate Limiting
             RATE_LIMIT_API=10r/s
             RATE_LIMIT_STATIC=30r/s
             RATE_LIMIT_BURST=20
+
+            # Health Check Configuration
             HEALTH_CHECK_INTERVAL=30s
             HEALTH_CHECK_TIMEOUT=10s
             HEALTH_CHECK_RETRIES=3
+
+            # GitHub Actions Metadata
+            GITHUB_RUN_ID=${{ github.run_id }}
+            GITHUB_SHA=${{ github.sha }}
+            DEPLOYMENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
             EOF
 
-            # Stop existing containers gracefully
-            echo "🛑 Stopping existing containers..."
-            docker-compose -f docker-compose.prod.yml down || true
+            # Ensure Traefik network exists
+            log "🔗 Ensuring Traefik network exists..."
+            docker network ls | grep -q "traefik" || docker network create traefik
+
+            # Stop existing containers gracefully with timeout
+            log "🛑 Stopping existing containers..."
+            timeout 60 docker-compose -f docker-compose.prod.yml down --remove-orphans || {
+                log "⚠️ Graceful shutdown failed, forcing container stop..."
+                docker-compose -f docker-compose.prod.yml kill
+                docker-compose -f docker-compose.prod.yml rm -f
+            }
+
+            # Prune Docker system to free space
+            log "🧹 Cleaning Docker system..."
+            docker system prune -af --volumes || log "⚠️ Docker cleanup partially failed"
 
             # Build new containers
-            echo "🔨 Building new containers..."
-            docker-compose -f docker-compose.prod.yml build --no-cache || { echo "❌ Build failed"; exit 1; }
+            log "🔨 Building application containers..."
+            DOCKER_BUILDKIT=1 docker-compose -f docker-compose.prod.yml build \
+                --no-cache \
+                --pull \
+                --parallel || {
+                log "❌ Container build failed"
+                exit 1
+            }
 
-            # Start containers
-            echo "🚀 Starting containers..."
-            docker-compose -f docker-compose.prod.yml up -d || { echo "❌ Failed to start containers"; exit 1; }
+            # Start containers in detached mode
+            log "🚀 Starting application containers..."
+            docker-compose -f docker-compose.prod.yml up -d || {
+                log "❌ Failed to start containers"
+                log "📋 Container status:"
+                docker-compose -f docker-compose.prod.yml ps
+                log "📋 Container logs:"
+                docker-compose -f docker-compose.prod.yml logs --tail=50
+                exit 1
+            }
 
-            # Wait for application to start
-            echo "⏳ Waiting for application to start..."
-            sleep 15
+            # Wait for application startup
+            log "⏳ Waiting for application to initialize..."
+            sleep 30
 
-            # Health check with retries
-            echo "🏥 Performing health check..."
-            for i in {1..5}; do
-              if curl -f http://localhost > /dev/null 2>&1; then
-                echo "✅ Health check passed (attempt $i/5)"
-                break
-              else
-                echo "⏳ Health check failed (attempt $i/5), retrying in 10 seconds..."
-                sleep 10
-                if [ $i -eq 5 ]; then
-                  echo "❌ Health check failed after 5 attempts"
-                  echo "📋 Container status:"
-                  docker-compose -f docker-compose.prod.yml ps
-                  echo "📋 Recent logs:"
-                  docker-compose -f docker-compose.prod.yml logs --tail=20
-                  exit 1
+            # Comprehensive health check with retries
+            log "🏥 Performing health checks..."
+            HEALTH_CHECK_URL="http://localhost:8080/health"
+            MAX_ATTEMPTS=10
+            ATTEMPT=1
+
+            while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+                log "Health check attempt $ATTEMPT/$MAX_ATTEMPTS"
+                
+                # Check if container is running
+                if ! docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
+                    log "❌ Container is not running"
+                    docker-compose -f docker-compose.prod.yml ps
+                    docker-compose -f docker-compose.prod.yml logs --tail=20
+                    exit 1
                 fi
-              fi
+                
+                # Check health endpoint
+                if curl -f -s --max-time 10 "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
+                    log "✅ Health check passed!"
+                    break
+                elif [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
+                    log "❌ Health check failed after $MAX_ATTEMPTS attempts"
+                    log "📋 Final container status:"
+                    docker-compose -f docker-compose.prod.yml ps
+                    log "📋 Application logs:"
+                    docker-compose -f docker-compose.prod.yml logs --tail=50
+                    exit 1
+                else
+                    log "⏳ Health check failed, retrying in 15 seconds..."
+                    sleep 15
+                fi
+                
+                ((ATTEMPT++))
             done
 
-            # Clean up old Docker images (non-blocking)
-            echo "🧹 Cleaning up old Docker images..."
-            docker system prune -f || true
+            # Verify external accessibility
+            log "🌐 Verifying external accessibility..."
+            if curl -f -s --max-time 10 "http://localhost:8080/" > /dev/null 2>&1; then
+                log "✅ Application is accessible via HTTP"
+            else
+                log "⚠️ Application may not be externally accessible"
+            fi
 
-            # Final status check
-            echo "📊 Final status check..."
+            # Final deployment status
+            log "📊 Deployment Summary:"
+            echo "==================="
+            docker-compose -f docker-compose.prod.yml ps
+            echo ""
+            log "💾 Disk usage:"
+            df -h / | tail -1
+            echo ""
+            log "🐳 Docker images:"
+            docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | head -5
+
+            log "✅ Deployment completed successfully!"
+            log "🌍 Application URL: https://targets.srv903155.hstgr.cloud"
+            log "🕐 Deployment finished at: $(date)"
+
+      - name: Post-deployment verification
+        if: success()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 60s
+          script: |
+            echo "🔍 Post-deployment verification..."
+
+            # Wait a bit more for full initialization
+            sleep 10
+
+            # Final comprehensive check
+            if curl -f -s --max-time 15 "https://targets.srv903155.hstgr.cloud" > /dev/null 2>&1; then
+                echo "✅ Production site is live and accessible!"
+            else
+                echo "⚠️ Production site verification failed - may need time to propagate"
+                # Don't fail the deployment for this
+            fi
+
+            # Log final container status
+            echo "📊 Final container status:"
+            cd /opt/targets-navigator
             docker-compose -f docker-compose.prod.yml ps
 
-            echo "✅ Deployment successful! Application is running at http://$(curl -s ifconfig.me)"
-            echo "🕐 Deployment completed at: $(date)"
+  post-deployment:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 5
 
-      - name: Notify deployment status
-        if: always()
+    steps:
+      - name: Deployment notification
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment completed successfully!"
+          if [ "${{ needs.deploy.result }}" == "success" ]; then
+            echo "🎉 DEPLOYMENT SUCCESSFUL!"
+            echo "✅ Application deployed to: https://targets.srv903155.hstgr.cloud"
+            echo "📝 Deployment ID: ${{ github.run_id }}"
+            echo "🔗 Commit: ${{ github.sha }}"
+            echo "👤 Deployed by: ${{ github.actor }}"
+            echo "🕐 Completed at: $(date -u)"
           else
-            echo "❌ Deployment failed. Check the logs above for details."
+            echo "❌ DEPLOYMENT FAILED!"
+            echo "🔍 Check the deployment logs above for details"
+            echo "📝 Deployment ID: ${{ github.run_id }}"
+            echo "🔗 Failed commit: ${{ github.sha }}"
+            echo "👤 Attempted by: ${{ github.actor }}"
           fi
+
+      - name: Cleanup artifacts
+        if: always()
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: build-files-${{ github.run_id }}
+          failOnError: false
