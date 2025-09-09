@@ -70,8 +70,7 @@ export const CompanyBubbleChart = ({
   yAxisRange,
   filterTiers,
 }: CompanyBubbleChartProps) => {
-  console.log("CompanyBubbleChart rendering with data:", data?.length || 0, "items");
-  console.log("Chart props:", { title, xAxisTitle, yAxisTitle, height, showLegend, showGrid });
+  // Debug logging removed to prevent infinite re-renders
 
   // Process data and create traces
   const { traces } = useMemo(() => {
@@ -150,8 +149,7 @@ export const CompanyBubbleChart = ({
       };
     });
 
-    console.log("Created traces:", traces.length, "traces");
-    console.log("Sample trace:", traces[0]);
+    // Debug logging removed to prevent infinite re-renders
     return { traces };
   }, [
     data,
@@ -188,7 +186,7 @@ export const CompanyBubbleChart = ({
 
   // Debug: Check if we have traces
   if (traces.length === 0) {
-    console.log("No traces to render, returning empty div");
+    // No traces to render, returning empty div
     return (
       <div className="flex h-full w-full items-center justify-center rounded bg-gray-100">
         <div className="text-center">
@@ -199,7 +197,7 @@ export const CompanyBubbleChart = ({
     );
   }
 
-  console.log("Rendering Plotly with", traces.length, "traces");
+  // Rendering Plotly with traces
 
   return (
     <div className="h-full w-full">

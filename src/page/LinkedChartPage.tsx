@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { CompanyOverview } from "@/lib/supabase";
 import { LinkedChart } from "@/components/charts/LinkedChart";
 import { useCompanyOverview } from "@/hooks/useCompanyOverview";
@@ -68,13 +68,21 @@ export const LinkedChartPage = () => {
   const [selectedCompany, setSelectedCompany] = useState<CompanyOverview | null>(null);
   const [searchTerm] = useState("");
 
-  // Debug logging
-  console.log("LinkedChartPage - Data status:", {
+  // Debug logging - only log when values actually change
+  const prevDataRef = useRef<
+    { dataLength: number; loading: boolean; error: string | null } | undefined
+  >(undefined);
+  const currentStatus = {
     dataLength: data?.length || 0,
     loading,
     error,
     hasData: !!(data && data.length > 0),
-  });
+  };
+
+  if (JSON.stringify(prevDataRef.current) !== JSON.stringify(currentStatus)) {
+    console.log("LinkedChartPage - Data status:", currentStatus);
+    prevDataRef.current = currentStatus;
+  }
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
