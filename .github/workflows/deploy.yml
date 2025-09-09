@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Security: Prevent workflow from running on forks
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -27,11 +32,22 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      - name: Security audit
+        run: npm audit --audit-level=moderate
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
       - name: Build application
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://dnlnfohcjvoqwuufpyyo.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRubG5mb2hjanZvcXd1dWZweXlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4MzAyODYsImV4cCI6MjA2NDQwNjI4Nn0.7AbPWVNDHRojxa8M7R2tTUXHwOSYn3bUYZezDHhNgcA' }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -81,10 +97,29 @@ jobs:
               exit 1
             fi
 
-            if [ ! -f .env.production ]; then
-              echo "❌ .env.production not found"
-              exit 1
-            fi
+            # Create .env.production file with secrets
+            echo "📝 Creating .env.production file..."
+            cat > .env.production << 'EOF'
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+            VITE_APP_ENV=production
+            NODE_ENV=production
+            TZ=UTC
+            NGINX_WORKER_PROCESSES=auto
+            NGINX_WORKER_CONNECTIONS=1024
+            LOG_LEVEL=info
+            ACCESS_LOG_FORMAT=main
+            GZIP_COMPRESSION=on
+            BROTLI_COMPRESSION=off
+            CACHE_STATIC_ASSETS=1y
+            CACHE_HTML_FILES=1h
+            RATE_LIMIT_API=10r/s
+            RATE_LIMIT_STATIC=30r/s
+            RATE_LIMIT_BURST=20
+            HEALTH_CHECK_INTERVAL=30s
+            HEALTH_CHECK_TIMEOUT=10s
+            HEALTH_CHECK_RETRIES=3
+            EOF
 
             # Stop existing containers gracefully
             echo "🛑 Stopping existing containers..."

@@ -39,4 +39,22 @@ auto-imports.d.ts
 # Data-Driven Dashboard (excluded from git)
 Data-Driven Dashboard/
 
+# Environment files (SECURITY: Never commit secrets)
+.env
+.env.local
+.env.production
+.env.*.local
+env.production
+env.production.template
+
+# Secrets and sensitive files
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Docker secrets
+docker-compose.override.yml
+
 *.png
