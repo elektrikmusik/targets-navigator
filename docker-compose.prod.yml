@@ -1,8 +1,6 @@
 # Production Docker Compose Configuration
 # Optimized for security, monitoring, and high availability
 
-version: "3.8"
-
 services:
   targets-navigator:
     build:
@@ -17,10 +15,10 @@ services:
     environment:
       - NODE_ENV=production
       - TZ=UTC
+      - GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - nginx_logs:/var/log/nginx
-      - nginx_cache:/var/cache/nginx
     networks:
       - traefik
     labels:
