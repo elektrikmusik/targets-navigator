@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "GitHub": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server",
+        "stdio"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "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"
+      }
+    },
+    "hostinger-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "APITOKEN",
+        "mcp/api-mcp-server@sha256:2a77cc1395b6b6d2f7a468435eecc26d2753e5713b4b85d11580402c88584e04"
+      ],
+      "env": {
+        "APITOKEN": "oKqglLaxK7apXLevYyu4nNsshRtr9G1VOdCC0KlZ42e46584"
+      }
+    }
+  }
+}

@@ -1,0 +1,108 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Force deployment (skip build check)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.force_deploy == true
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+
+      - name: Add VPS to known hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            set -e
+            echo "🚀 Starting deployment to /root/targets-navigator..."
+            
+            # Navigate to root directory
+            cd /root
+            
+            # Stop existing targets-navigator container if running
+            echo "🛑 Stopping existing targets-navigator container..."
+            docker-compose down targets-navigator || true
+            
+            # Update targets-navigator source code
+            if [ -d "targets-navigator" ]; then
+              echo "🔄 Updating existing targets-navigator repository..."
+              cd targets-navigator
+              git fetch origin
+              git reset --hard origin/main
+              cd /root
+            else
+              echo "📥 Cloning fresh repository to /root/targets-navigator..."
+              git clone https://github.com/elektrikmusik/targets-navigator.git targets-navigator
+            fi
+            
+            # Rebuild and start targets-navigator
+            echo "🔨 Building targets-navigator container..."
+            docker-compose build --no-cache targets-navigator
+            
+            echo "🚀 Starting targets-navigator container..."
+            docker-compose up -d targets-navigator
+            
+            # Health check
+            echo "🏥 Performing health check..."
+            sleep 20
+            
+            # Check if container is running
+            if docker-compose ps targets-navigator | grep -q "Up"; then
+              echo "✅ Container is running"
+              
+              # Test HTTP response on direct port
+              if curl -f -s http://localhost:3001 > /dev/null; then
+                echo "✅ Application is responding on port 3001"
+                
+                # Test subdomain access
+                if curl -f -s -k https://targets.srv903155.hstgr.cloud > /dev/null; then
+                  echo "✅ Application accessible via https://targets.srv903155.hstgr.cloud"
+                else
+                  echo "⚠️ Subdomain not accessible, but direct port works"
+                fi
+              else
+                echo "⚠️ Application not responding, checking logs..."
+                docker-compose logs targets-navigator --tail=20
+              fi
+            else
+              echo "❌ Container failed to start"
+              docker-compose logs targets-navigator
+              exit 1
+            fi
+            
+            # Cleanup old images
+            echo "🧹 Cleaning up old Docker images..."
+            docker image prune -f || true
+            
+            echo "🎉 Deployment completed successfully!"
+            echo "📂 Application deployed as part of main docker-compose stack"
+            echo "🌐 Accessible at https://targets.srv903155.hstgr.cloud"
+          EOF
