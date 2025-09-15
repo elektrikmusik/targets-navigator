@@ -11,6 +11,7 @@ import {
   IconHome,
   IconUsers,
   IconTarget,
+  IconPresentation,
 } from "@tabler/icons-react";
 import { motion } from "motion/react";
 
@@ -33,6 +34,11 @@ const navigationLinks = [
     label: "Company Overview",
     href: "/overview",
     icon: <IconBuilding className="h-5 w-5" />,
+  },
+  {
+    label: "Framework",
+    href: "/framework",
+    icon: <IconPresentation className="h-5 w-5" />,
   },
   {
     label: "Analytics",

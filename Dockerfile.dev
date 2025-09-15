@@ -1,0 +1,52 @@
+# Development Dockerfile for live reloading
+# This runs the Vite dev server instead of building static files
+
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init curl
+
+# Create app user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S -D -H -u 1001 -h /app -s /sbin/nologin -G nodejs -g nodejs nodejs
+
+# Copy package files first for better layer caching
+COPY package*.json ./
+COPY bun.lockb* ./
+
+# Install dependencies
+RUN npm ci --legacy-peer-deps --no-audit --no-fund && \
+    npm cache clean --force
+
+# Copy source code (this will be overridden by volume mounts)
+COPY . .
+
+# Accept build arguments for environment variables
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+
+# Set environment variables
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV NODE_ENV=development
+ENV CHOKIDAR_USEPOLLING=true
+ENV VITE_HOST=0.0.0.0
+
+# Switch to non-root user
+USER nodejs
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Health check for Vite dev server
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:5173 || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start Vite dev server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

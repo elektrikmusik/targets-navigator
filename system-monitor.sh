@@ -1,4 +1,11 @@
 #!/bin/bash
+# Purpose: Monitors application health and system resources
+# Author: Ceres Power Development Team
+# Date: $(date +%Y-%m-%d)
+# Description: This script is part of the Targets Navigator application deployment process
+#              and provides real-time monitoring of Docker containers, system resources,
+#              and application performance metrics.
+# Security Level: Internal use only - Production monitoring and maintenance
 
 # Monitor application health
 echo "=== Application Status ==="

@@ -287,7 +287,7 @@ export const CompanyBubbleChart = ({
           ],
           responsive: true,
         }}
-        style={{ width: "100%", height: "100%" }}
+        className="plotly-chart"
         onClick={handleClick}
         onHover={handleHover}
       />

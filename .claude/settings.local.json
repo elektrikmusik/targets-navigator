@@ -37,7 +37,8 @@
       "Bash(docker logs:*)",
       "Read(//Users/hafid/.ssh/**)",
       "Bash(git rm:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,47 @@
+# Development Docker Compose Configuration with Live Reloading
+# Use this for development with hot reload: docker-compose -f docker-compose.dev.yml up
+
+services:
+  targets-navigator-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    ports:
+      - "5173:5173" # Vite dev server port
+    container_name: targets-navigator-dev
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true # Enable polling for file watching in Docker
+      - VITE_HOST=0.0.0.0
+    volumes:
+      # Mount source code for live reloading
+      - ./src:/app/src:cached
+      - ./public:/app/public:cached
+      - ./index.html:/app/index.html:cached
+      - ./package.json:/app/package.json:cached
+      - ./package-lock.json:/app/package-lock.json:cached
+      - ./tsconfig.json:/app/tsconfig.json:cached
+      - ./vite.config.ts:/app/vite.config.ts:cached
+      - ./tailwind.config.ts:/app/tailwind.config.ts:cached
+      - ./postcss.config.js:/app/postcss.config.js:cached
+      # Exclude node_modules from mounting to avoid conflicts
+      - /app/node_modules
+    networks:
+      - targets-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    # Keep container running for development
+    tty: true
+    stdin_open: true
+
+networks:
+  targets-network:
+    driver: bridge

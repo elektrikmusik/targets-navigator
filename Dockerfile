@@ -57,7 +57,12 @@ RUN rm -rf node_modules && \
     rm -rf global.d.ts && \
     rm -rf auto-imports.d.ts && \
     rm -rf package*.json && \
-    rm -rf bun.lockb*
+    rm -rf bun.lockb* && \
+    rm -rf scripts/ && \
+    rm -rf *.sh && \
+    rm -rf .claude/ && \
+    rm -rf security-manifest.json && \
+    rm -rf SECURITY-WHITELIST.md
 
 # Production stage
 FROM nginx:1.25-alpine AS production

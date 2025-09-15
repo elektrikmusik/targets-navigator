@@ -1,7 +1,11 @@
 #!/bin/bash
-
-# Security Check Script for targets-navigator
-# This script performs basic security checks on the codebase
+# Purpose: Performs comprehensive security checks on the Targets Navigator codebase
+# Author: Ceres Power Development Team
+# Date: $(date +%Y-%m-%d)
+# Description: This script is part of the Targets Navigator application deployment process
+#              and performs automated security validation including secret detection,
+#              environment file validation, and security configuration verification.
+# Security Level: Internal use only - Development and CI/CD pipeline
 
 set -e
 

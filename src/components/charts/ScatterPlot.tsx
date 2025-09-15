@@ -52,7 +52,7 @@ export const ScatterPlot = ({
         displaylogo: false,
         modeBarButtonsToRemove: ["pan2d", "lasso2d"],
       }}
-      style={{ width: "100%", height: "100%" }}
+      className="plotly-chart"
     />
   );
 };

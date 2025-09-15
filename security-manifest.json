@@ -1,0 +1,108 @@
+{
+  "application": {
+    "name": "Ceres Power Companies Scoring Navigator",
+    "version": "1.0.0",
+    "description": "A React-based dashboard for evaluating and scoring companies in the hydrogen energy sector",
+    "purpose": "Internal company evaluation dashboard for strategic analysis",
+    "author": "Ceres Power",
+    "license": "MIT",
+    "security_level": "internal",
+    "deployment_environment": "production"
+  },
+  "scripts": {
+    "security-audit.sh": {
+      "purpose": "Performs comprehensive security checks on the codebase",
+      "functionality": [
+        "Hardcoded secret detection",
+        "Environment file validation",
+        "Security configuration verification",
+        "Git history security audit"
+      ],
+      "security_level": "internal",
+      "usage": "Development and CI/CD pipeline"
+    },
+    "health-check.sh": {
+      "purpose": "Diagnoses application deployment issues and system health",
+      "functionality": [
+        "Docker container status checking",
+        "System resource monitoring",
+        "Application responsiveness testing",
+        "Deployment validation"
+      ],
+      "security_level": "internal",
+      "usage": "Development and production monitoring"
+    },
+    "system-monitor.sh": {
+      "purpose": "Monitors application health and system resources",
+      "functionality": [
+        "Real-time container monitoring",
+        "System resource tracking",
+        "Application log analysis",
+        "Performance metrics collection"
+      ],
+      "security_level": "internal",
+      "usage": "Production monitoring and maintenance"
+    },
+    "deployment-helper.sh": {
+      "purpose": "Provides Docker deployment automation and management commands",
+      "functionality": [
+        "Docker container lifecycle management",
+        "Environment deployment automation",
+        "Application health checking",
+        "Resource cleanup operations"
+      ],
+      "security_level": "internal",
+      "usage": "Development and production deployment"
+    }
+  },
+  "dependencies": {
+    "supabase": {
+      "purpose": "Database and authentication service",
+      "security_level": "trusted",
+      "data_handling": "encrypted"
+    },
+    "react": {
+      "purpose": "Frontend framework",
+      "security_level": "trusted",
+      "vulnerabilities": "none_known"
+    },
+    "nginx": {
+      "purpose": "Web server with security headers",
+      "security_level": "hardened",
+      "features": [
+        "Rate limiting",
+        "Security headers",
+        "SSL/TLS termination",
+        "Static file serving"
+      ]
+    }
+  },
+  "security_features": {
+    "authentication": "Supabase Auth with JWT tokens",
+    "authorization": "Role-based access control",
+    "data_encryption": "TLS 1.3 in transit, AES-256 at rest",
+    "security_headers": [
+      "X-Frame-Options: SAMEORIGIN",
+      "X-Content-Type-Options: nosniff",
+      "X-XSS-Protection: 1; mode=block",
+      "Strict-Transport-Security: max-age=31536000",
+      "Content-Security-Policy: default-src 'self'"
+    ],
+    "rate_limiting": "10 requests/second for API, 30 for static files",
+    "input_validation": "Client and server-side validation",
+    "error_handling": "Secure error messages without sensitive data"
+  },
+  "compliance": {
+    "data_protection": "GDPR compliant data handling",
+    "security_standards": "OWASP Top 10 compliance",
+    "audit_trail": "Comprehensive logging and monitoring",
+    "backup_strategy": "Automated daily backups with encryption"
+  },
+  "contact": {
+    "security_team": "security@cerespower.com",
+    "development_team": "dev@cerespower.com",
+    "incident_response": "incident@cerespower.com"
+  },
+  "last_updated": "2024-01-10",
+  "next_review": "2024-04-10"
+}

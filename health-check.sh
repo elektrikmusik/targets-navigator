@@ -1,4 +1,11 @@
 #!/bin/bash
+# Purpose: Diagnoses application deployment issues and system health
+# Author: Ceres Power Development Team
+# Date: $(date +%Y-%m-%d)
+# Description: This script is part of the Targets Navigator application deployment process
+#              and provides comprehensive health checking for Docker containers,
+#              system resources, and application responsiveness.
+# Security Level: Internal use only - Development and production monitoring
 
 # Colors for output
 RED='\033[0;31m'

@@ -431,7 +431,9 @@ export const CompanyOverviewDashboard = () => {
             <div>
               Showing {filteredData.length} of {totalCount} companies
               {filteredData.length < totalCount && (
-                <span className="ml-2 text-orange-600">(Some companies may be filtered out)</span>
+                <span className="text-orange-warning ml-2">
+                  (Some companies may be filtered out)
+                </span>
               )}
             </div>
           )}
@@ -445,9 +447,13 @@ export const CompanyOverviewDashboard = () => {
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={`flex items-center gap-2 transition-colors ${
                 showAdvancedFilters
-                  ? "border-purple-600 bg-purple-600 text-white hover:bg-purple-700"
+                  ? "text-white hover:opacity-90"
                   : "hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
               }`}
+              style={{
+                borderColor: showAdvancedFilters ? "#59315F" : undefined,
+                backgroundColor: showAdvancedFilters ? "#59315F" : undefined,
+              }}
             >
               <Filter className="h-4 w-4" />
               {showAdvancedFilters ? "Hide" : "Show"} Advanced Filters

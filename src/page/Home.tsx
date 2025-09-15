@@ -65,7 +65,7 @@ export const Home = () => {
 
               <Card>
                 <CardHeader>
-                  <BarChart3 className="mb-2 h-8 w-8 text-purple-600" />
+                  <BarChart3 className="icon-purple mb-2 h-8 w-8" />
                   <CardTitle>Advanced Table</CardTitle>
                   <CardDescription>
                     Built with TanStack Table and shadcn/ui for enterprise-grade data presentation
@@ -84,12 +84,8 @@ export const Home = () => {
                 <span className="rounded-full bg-green-100 px-3 py-1 text-green-800">
                   TypeScript
                 </span>
-                <span className="rounded-full bg-purple-100 px-3 py-1 text-purple-800">
-                  Supabase
-                </span>
-                <span className="rounded-full bg-orange-100 px-3 py-1 text-orange-800">
-                  TanStack Table
-                </span>
+                <span className="badge-purple">Supabase</span>
+                <span className="badge-orange">TanStack Table</span>
                 <span className="rounded-full bg-indigo-100 px-3 py-1 text-indigo-800">
                   shadcn/ui
                 </span>

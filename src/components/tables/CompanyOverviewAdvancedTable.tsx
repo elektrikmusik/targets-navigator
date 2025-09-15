@@ -220,7 +220,7 @@ const columns: ColumnDef<CompanyOverview>[] = [
       const getTierColor = (tier: string) => {
         switch (tier) {
           case "Partner":
-            return "bg-purple-100 text-purple-800 border-purple-200";
+            return "text-[#59315F] border-[#59315F] bg-[#59315F]/10";
           case "Tier 1":
             return "bg-green-100 text-green-800 border-green-200";
           case "Tier 2":

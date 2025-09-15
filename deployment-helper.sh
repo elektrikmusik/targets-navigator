@@ -1,7 +1,11 @@
 #!/bin/bash
-
-# Quick Start Script for Targets Navigator Docker Deployment
-# This script provides easy commands for common Docker operations
+# Purpose: Provides Docker deployment automation and management commands
+# Author: Ceres Power Development Team
+# Date: $(date +%Y-%m-%d)
+# Description: This script is part of the Targets Navigator application deployment process
+#              and provides simplified commands for Docker container management,
+#              environment deployment, and application lifecycle operations.
+# Security Level: Internal use only - Development and production deployment
 
 set -euo pipefail
 

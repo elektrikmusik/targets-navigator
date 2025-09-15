@@ -1,7 +1,10 @@
 {
-  "name": "react-ts-starter",
+  "name": "ceres-power-companies-scoring-navigator",
+  "description": "A React-based dashboard for evaluating and scoring companies in the hydrogen energy sector",
+  "version": "1.0.0",
+  "author": "Ceres Power",
+  "license": "MIT",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +13,7 @@
     "preview": "vite preview",
     "prepare": "husky",
     "lint-staged": "lint-staged",
-    "security-check": "./scripts/security-check.sh",
+    "security-audit": "./scripts/security-audit.sh",
     "audit": "npm audit --audit-level=moderate",
     "audit-fix": "npm audit fix"
   },
@@ -28,6 +31,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@supabase/supabase-js": "^2.56.0",
     "@tabler/icons-react": "^3.34.1",
+    "@tailwindcss/postcss": "^4.1.13",
     "@tailwindcss/vite": "^4.1.11",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",

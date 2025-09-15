@@ -1,6 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router";
 import { Suspense, lazy } from "react";
-import { Home, NotFound, RootErrorBoundary, LinkedChartPage } from "./page";
+import { Home, NotFound, RootErrorBoundary, LinkedChartPage, Framework, Dashboard } from "./page";
 import { ErrorBoundary } from "./components/ui/error-boundary";
 import { DashboardSkeleton } from "./components/ui/skeleton";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -41,6 +41,24 @@ const App = () => {
               element={
                 <Suspense fallback={<DashboardSkeleton />}>
                   <LinkedChartPage />
+                </Suspense>
+              }
+              errorElement={<RootErrorBoundary />}
+            />
+            <Route
+              path="/framework"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <Framework />
+                </Suspense>
+              }
+              errorElement={<RootErrorBoundary />}
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <Dashboard />
                 </Suspense>
               }
               errorElement={<RootErrorBoundary />}
